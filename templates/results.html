@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Analysis Results - Product Idea Oracle</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;padding:20px;color:#333}
+    .container{background:#fff;border-radius:20px;box-shadow:0 20px 40px rgba(0,0,0,.1);max-width:1100px;width:100%;margin:0 auto;padding:32px}
+    .header{text-align:center;margin-bottom:24px}
+    .score-ring{width:96px;height:96px;border-radius:50%;margin:12px auto;border:8px solid #ddd;display:flex;align-items:center;justify-content:center;font-size:1.25rem;font-weight:700}
+    .high{border-color:#27ae60}.medium{border-color:#f39c12}.low{border-color:#e74c3c}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px;margin:18px 0}
+    .card{background:#f8f9fa;border-radius:14px;padding:16px;border-left:4px solid #667eea}
+    .card h3{color:#2c3e50;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+    .list-item{background:#fff;padding:8px;margin:5px 0;border-radius:8px;border-left:3px solid #667eea}
+    .chips span{display:inline-block;background:#fff;border-left:3px solid #667eea;border-radius:8px;padding:6px 8px;margin:3px}
+    .palette{display:flex;gap:10px;margin:10px 0}
+    .sw{width:36px;height:36px;border-radius:50%;border:2px solid #ddd}
+    .domain-check{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}
+    .available{color:#27ae60;font-weight:700}.taken{color:#e74c3c}
+    .toolbar{display:flex;gap:10px;justify-content:center;margin:10px 0 0}
+    .btn{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;border:none;padding:10px 18px;border-radius:24px;text-decoration:none;display:inline-block}
+    .sticky{position:fixed;right:16px;bottom:16px}
+    pre{background:#0b1021;color:#d0e3ff;padding:14px;border-radius:10px;overflow:auto;max-height:300px}
+    .muted{color:#6b7280;font-size:.95rem}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🔮 Analysis Complete</h1>
+      <p><strong>Your Idea:</strong> “{{ idea }}”</p>
+      <div class="score-ring {% if analysis.viability_score >= 7 %}high{% elif analysis.viability_score >= 4 %}medium{% else %}low{% endif %}">
+        {{ analysis.viability_score }}/10
+      </div>
+      <p class="muted">{{ analysis.score_explanation }}</p>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h3>🧭 Positioning</h3>
+        <p>{{ analysis.positioning }}</p>
+      </div>
+
+      <div class="card">
+        <h3>🎯 Target Users</h3>
+        <p>{{ analysis.target_users }}</p>
+        <h4 class="muted" style="margin-top:8px;">Core Pain Points</h4>
+        {% for p in analysis.core_pain_points %}
+          <div class="list-item">{{ p }}</div>
+        {% endfor %}
+      </div>
+
+      <div class="card">
+        <h3>🏷️ Product Names + Domains</h3>
+        {% for name in analysis.product_names %}
+          <div class="list-item">
+            <strong>{{ name }}</strong>
+            <div class="domain-check">
+              {% for ext, available in (domains.get(name, {})).items() %}
+                <span class="{% if available %}available{% else %}taken{% endif %}">
+                  {{ name|lower|replace(' ', '') }}{{ ext }} {% if available %}✓{% else %}✗{% endif %}
+                </span>
+              {% endfor %}
+            </div>
+            {% if handles and handles.get(name) %}
+                {% set h = handles.get(name) %}
+              <div class="domain-check muted">
+                IG: {{ '✓' if h.instagram is true else ('?' if h.instagram is none else '✗') }} ·
+                X: {{ '✓' if h.x is true else ('?' if h.x is none else '✗') }} ·
+                TikTok: {{ '✓' if h.tiktok is true else ('?' if h.tiktok is none else '✗') }}
+              </div>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+
+      <div class="card">
+        <h3>💬 Tagline</h3>
+        <div class="list-item"><em>“{{ analysis.tagline }}”</em></div>
+      </div>
+
+      <div class="card">
+        <h3>🎨 Brand Personality</h3>
+        <p>{{ analysis.brand_personality }}</p>
+        <div class="chips">
+          {% for kw in analysis.mood_keywords %}
+            <span>#{{ kw }}</span>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>🌈 Color Palette</h3>
+        <div class="palette">
+          {% for color in analysis.color_palette %}
+            <div class="sw" data-color="{{ (color or '#ffffff')|lower }}" title="{{ color }}"></div>
+          {% endfor %}
+        </div>
+        <p><strong>Colors:</strong> {{ analysis.color_palette | join(', ') }}</p>
+      </div>
+
+      <div class="card">
+        <h3>⚠️ Risks → Counter-moves</h3>
+        {% for r in analysis.key_risks %}
+          <div class="list-item">{{ r }}</div>
+        {% endfor %}
+        <h4 class="muted" style="margin-top:8px;">Counter-moves</h4>
+        {% for c in analysis.counter_moves %}
+          <div class="list-item">{{ c }}</div>
+        {% endfor %}
+      </div>
+
+      <div class="card">
+        <h3>🚀 Opportunities</h3>
+        {% for o in analysis.opportunities %}
+          <div class="list-item">{{ o }}</div>
+        {% endfor %}
+      </div>
+
+      <div class="card">
+        <h3>🔍 Similar Products</h3>
+        {% for s in analysis.similar_products %}
+          <div class="list-item">{{ s }}</div>
+        {% endfor %}
+      </div>
+
+      <div class="card">
+        <h3>💰 Revenue Model</h3>
+        <p>{{ analysis.revenue_model }}</p>
+      </div>
+
+      <div class="card">
+        <h3>📣 GTM Channels</h3>
+        {% for g in analysis.gtm_channels %}
+          <div class="list-item">{{ g }}</div>
+        {% endfor %}
+      </div>
+
+      <div class="card">
+        <h3>🗓️ 30-Day Launch Plan</h3>
+        {% for step in analysis.launch_30_day_plan %}
+          <div class="list-item">{{ loop.index }}. {{ step }}</div>
+        {% endfor %}
+      </div>
+
+      <div class="card">
+        <h3>📊 TAM/SAM/SOM (rough)</h3>
+        <p>{{ analysis.tamsam_som }}</p>
+      </div>
+
+      <div class="card">
+        <h3>✅ Next Steps</h3>
+        {% for step in analysis.next_steps %}
+          <div class="list-item">{{ loop.index }}. {{ step }}</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <a href="{{ request.url_for('homepage') }}" class="btn">🔮 Analyze Another Idea</a>
+      {% if record_id %}
+        <a class="btn" href="{{ request.url_for('download_json', rec_id=record_id) }}">⬇️ Download JSON</a>
+        <button class="btn" id="copyBtn" type="button">📋 Copy JSON</button>
+        <button class="btn" id="shareBtn" type="button">🔗 Share Link</button>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if record_id %}
+  <a class="btn sticky" href="{{ request.url_for('homepage') }}">+ New Analysis</a>
+  {% endif %}
+
+  
+<script id="analysis-data" type="application/json">
+{{ analysis_json | tojson | safe }}
+</script>
+
+
+<script>
+  
+  document.querySelectorAll('.sw').forEach(el => {
+    el.style.backgroundColor = el.dataset.color || '#ffffff';
+  });
+
+  
+  const dataNode = document.getElementById('analysis-data');
+  let analysisObj = {};
+  try { analysisObj = dataNode ? JSON.parse(dataNode.textContent) : {}; } catch (_) {}
+
+  const analysisJsonPretty = JSON.stringify(analysisObj, null, 2);
+  const recordId = "{{ record_id or '' }}";
+
+  const copyBtn  = document.getElementById('copyBtn');
+  const shareBtn = document.getElementById('shareBtn');
+
+  if (copyBtn) {
+    copyBtn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(analysisJsonPretty);
+        copyBtn.textContent = "✅ Copied";
+        setTimeout(() => copyBtn.textContent = "📋 Copy JSON", 1500);
+      } catch (e) {
+        alert("Copy failed");
+      }
+    });
+  }
+
+  if (shareBtn && recordId) {
+    shareBtn.addEventListener('click', async () => {
+      const url = `${location.origin}/view/${recordId}`;
+      try {
+        await navigator.clipboard.writeText(url);
+        shareBtn.textContent = "✅ Link Copied";
+        setTimeout(() => shareBtn.textContent = "🔗 Share Link", 1500);
+      } catch (e) {
+        prompt("Copy this link:", url);
+      }
+    });
+  }
+</script>
+</body>
+</html>

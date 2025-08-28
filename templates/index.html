@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🧠 Product Idea Oracle</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh; display: flex; align-items: center; justify-content: center; color: #333; padding: 20px;
+    }
+    .container {
+      background: #fff; border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      max-width: 640px; width: 100%; padding: 40px; text-align: center; position: relative;
+    }
+    .oracle-icon { font-size: 4rem; margin-bottom: 20px; }
+    h1 { color: #2c3e50; margin-bottom: 10px; font-size: 2.5rem; font-weight: 700; }
+    .subtitle { color: #7f8c8d; margin-bottom: 30px; font-size: 1.1rem; }
+    .form-group { margin-bottom: 20px; text-align: left; }
+    label { display: block; margin-bottom: 10px; font-weight: 600; color: #2c3e50; }
+    textarea {
+      width: 100%; padding: 15px; border: 2px solid #ecf0f1; border-radius: 10px; resize: vertical; min-height: 120px; font-size: 1rem;
+    }
+    textarea:focus { outline: none; border-color: #667eea; }
+    .row { display: flex; align-items: center; gap: 10px; margin: 10px 0 20px; }
+    .btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white; border: none; padding: 15px 40px; border-radius: 50px; font-size: 1.1rem; font-weight: 600; cursor: pointer; width: 100%;
+      transition: transform 0.2s ease;
+    }
+    .btn:hover { transform: translateY(-2px); }
+    .error { background: #e74c3c; color: white; padding: 12px; border-radius: 10px; margin-bottom: 16px; }
+    .example { background: #f8f9fa; border-left: 4px solid #667eea; padding: 15px; margin: 20px 0; text-align: left; border-radius: 0 10px 10px 0; }
+
+    /* Loading overlay */
+    .loading {
+      display: none; position: absolute; inset: 0; background: rgba(255,255,255,0.8);
+      align-items: center; justify-content: center; border-radius: 20px;
+    }
+    .ball { font-size: 48px; animation: pulse 1.2s infinite ease-in-out; }
+    @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="oracle-icon">🔮</div>
+    <h1>Product Idea Oracle</h1>
+    <p class="subtitle">Transform your ideas into actionable insights with AI-powered analysis</p>
+
+    {% if error %}
+      <div class="error">{{ error }}</div>
+    {% endif %}
+
+    <form method="POST" action="{{ request.url_for('analyze') }}" id="ideaForm">
+      <div class="form-group">
+        <label for="idea">Describe your product idea:</label>
+        <textarea name="idea" id="idea" placeholder="Example: An app that uses AI to..." required></textarea>
+      </div>
+      <div class="row">
+        <label style="display:flex;align-items:center;gap:8px;">
+          <input type="checkbox" name="use_local" value="1"> Use free local model (dev)
+        </label>
+        <a href="{{ request.url_for('history') }}" style="margin-left:auto;text-decoration:none;">History</a>
+      </div>
+      <button type="submit" class="btn" id="submitBtn">🧠 Analyze My Idea</button>
+    </form>
+
+    <div class="example">
+      <strong>💡 Pro Tip:</strong> Include your target audience, key features, and the core problem.
+    </div>
+
+    <div class="loading" id="loading"><div class="ball">🔮</div></div>
+  </div>
+
+  <script>
+    const form = document.getElementById('ideaForm');
+    const btn = document.getElementById('submitBtn');
+    const overlay = document.getElementById('loading');
+    form.addEventListener('submit', () => {
+      btn.disabled = true;
+      overlay.style.display = 'flex';
+    });
+  </script>
+</body>
+</html>
