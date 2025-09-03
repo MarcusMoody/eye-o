@@ -3,139 +3,161 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Analysis Results - Product Idea Oracle</title>
+  <title>Analysis Results - Eye-O</title>
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;padding:20px;color:#333}
     .container{background:#fff;border-radius:20px;box-shadow:0 20px 40px rgba(0,0,0,.1);max-width:1100px;width:100%;margin:0 auto;padding:32px}
     .header{text-align:center;margin-bottom:24px}
-    .score-ring{width:96px;height:96px;border-radius:50%;margin:12px auto;border:8px solid #ddd;display:flex;align-items:center;justify-content:center;font-size:1.25rem;font-weight:700}
+    .score-ring{width:120px;height:120px;border-radius:50%;margin:16px auto;border:10px solid #ddd;display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:900}
+    .score-label{font-size:1.2rem;font-weight:600;margin:8px 0;color:#2c3e50}
     .high{border-color:#27ae60}.medium{border-color:#f39c12}.low{border-color:#e74c3c}
     .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px;margin:18px 0}
-    .card{background:#f8f9fa;border-radius:14px;padding:16px;border-left:4px solid #667eea}
-    .card h3{color:#2c3e50;margin-bottom:10px;display:flex;align-items:center;gap:8px}
-    .list-item{background:#fff;padding:8px;margin:5px 0;border-radius:8px;border-left:3px solid #667eea}
+    .card{background:#f8f9fa;border-radius:14px;padding:20px;border-left:4px solid #667eea}
+    .card h3{color:#2c3e50;margin-bottom:15px;display:flex;align-items:center;gap:8px;font-size:1.1rem}
+    .subsection{margin:12px 0;padding:8px;background:#fff;border-radius:8px}
+    .subsection h4{color:#667eea;margin-bottom:8px;font-size:0.95rem;font-weight:600}
+    .selected-name{font-size:1.3rem;font-weight:700;color:#2c3e50;padding:8px;background:linear-gradient(135deg,#667eea20,#764ba220);border-radius:8px}
+    .list-item{background:#fff;padding:10px;margin:6px 0;border-radius:8px;border-left:3px solid #667eea}
     .chips span{display:inline-block;background:#fff;border-left:3px solid #667eea;border-radius:8px;padding:6px 8px;margin:3px}
     .palette{display:flex;gap:10px;margin:10px 0}
-    .sw{width:36px;height:36px;border-radius:50%;border:2px solid #ddd}
+    .sw{width:40px;height:40px;border-radius:50%;border:3px solid #ddd}
     .domain-check{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}
-    .available{color:#27ae60;font-weight:700}.taken{color:#e74c3c}
-    .toolbar{display:flex;gap:10px;justify-content:center;margin:10px 0 0}
-    .btn{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;border:none;padding:10px 18px;border-radius:24px;text-decoration:none;display:inline-block}
+    .available{color:#27ae60;font-weight:700}.taken{color:#e74c3c;font-weight:700}
+    .toolbar{display:flex;gap:12px;justify-content:center;margin:20px 0;flex-wrap:wrap}
+    .btn{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;border:none;padding:12px 20px;border-radius:25px;text-decoration:none;display:inline-flex;align-items:center;gap:8px;font-weight:600}
+    .btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,0.2)}
+    .icon-btn{padding:10px;border-radius:50%;min-width:44px;justify-content:center}
     .sticky{position:fixed;right:16px;bottom:16px}
     pre{background:#0b1021;color:#d0e3ff;padding:14px;border-radius:10px;overflow:auto;max-height:300px}
-    .muted{color:#6b7280;font-size:.95rem}
+    .muted{color:#2c3e50;font-size:.95rem}
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <h1>🔮 Analysis Complete</h1>
-      <p><strong>Your Idea:</strong> “{{ idea }}”</p>
+      <h1>Analysis Complete</h1>
+      <p><strong>Your Idea:</strong> "{{ idea }}"</p>
       <div class="score-ring {% if analysis.viability_score >= 7 %}high{% elif analysis.viability_score >= 4 %}medium{% else %}low{% endif %}">
         {{ analysis.viability_score }}/10
       </div>
+      <div class="score-label">{{ analysis.score_label }}</div>
       <p class="muted">{{ analysis.score_explanation }}</p>
     </div>
 
     <div class="grid">
+      <!-- Product Section (replaces Positioning + Names) -->
       <div class="card">
-        <h3>🧭 Positioning</h3>
-        <p>{{ analysis.positioning }}</p>
-      </div>
-
-      <div class="card">
-        <h3>🎯 Target Users</h3>
-        <p>{{ analysis.target_users }}</p>
-        <h4 class="muted" style="margin-top:8px;">Core Pain Points</h4>
-        {% for p in analysis.core_pain_points %}
-          <div class="list-item">{{ p }}</div>
-        {% endfor %}
-      </div>
-
-      <div class="card">
-        <h3>🏷️ Product Names + Domains</h3>
-        {% for name in analysis.product_names %}
-          <div class="list-item">
-            <strong>{{ name }}</strong>
-            <div class="domain-check">
-              {% for ext, available in (domains.get(name, {})).items() %}
-                <span class="{% if available %}available{% else %}taken{% endif %}">
-                  {{ name|lower|replace(' ', '') }}{{ ext }} {% if available %}✓{% else %}✗{% endif %}
-                </span>
-              {% endfor %}
-            </div>
-            {% if handles and handles.get(name) %}
-                {% set h = handles.get(name) %}
-              <div class="domain-check muted">
-                IG: {{ '✓' if h.instagram is true else ('?' if h.instagram is none else '✗') }} ·
-                X: {{ '✓' if h.x is true else ('?' if h.x is none else '✗') }} ·
-                TikTok: {{ '✓' if h.tiktok is true else ('?' if h.tiktok is none else '✗') }}
-              </div>
-            {% endif %}
+        <h3>🎯 Product</h3>
+        <div class="subsection">
+          <h4>Name</h4>
+          <div class="selected-name">{{ analysis.product.selected_name }}</div>
+        </div>
+        <div class="subsection">
+          <h4>Positioning</h4>
+          <p>{{ analysis.product.positioning }}</p>
+        </div>
+        <div class="subsection">
+          <h4>Domains</h4>
+          <div class="domain-check">
+            {% for ext, available in (domains.get(analysis.product.selected_name, {})).items() %}
+              <span class="{% if available %}available{% else %}taken{% endif %}">
+                {{ analysis.product.selected_name|lower|replace(' ', '') }}{{ ext }} {% if available %}✓{% else %}✗{% endif %}
+              </span>
+            {% endfor %}
           </div>
-        {% endfor %}
+          {% if handles and handles.get(analysis.product.selected_name) %}
+            {% set h = handles.get(analysis.product.selected_name) %}
+            <div class="domain-check muted" style="margin-top:8px; color: #2c3e50;">
+              IG: {{ '✓' if h.instagram is true else ('?' if h.instagram is none else '✗') }} •
+              X: {{ '✓' if h.x is true else ('?' if h.x is none else '✗') }} •
+              TikTok: {{ '✓' if h.tiktok is true else ('?' if h.tiktok is none else '✗') }}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Target Section (consolidated Users + GTM + TAM/SAM/SOM) -->
+      <div class="card">
+        <h3>🎯 Target</h3>
+        <div class="subsection">
+          <h4>Users</h4>
+          <p>{{ analysis.target.users }}</p>
+        </div>
+        <div class="subsection">
+          <h4>How?</h4>
+          {% for channel in analysis.target.how %}
+            <div class="list-item">{{ channel }}</div>
+          {% endfor %}
+        </div>
+        <div class="subsection">
+          <h4>My Focus</h4>
+          <p>{{ analysis.target.my_focus }}</p>
+        </div>
       </div>
 
       <div class="card">
         <h3>💬 Tagline</h3>
-        <div class="list-item"><em>“{{ analysis.tagline }}”</em></div>
+        <div class="list-item"><em>"{{ analysis.product.tagline }}"</em></div>
       </div>
 
       <div class="card">
         <h3>🎨 Brand Personality</h3>
-        <p>{{ analysis.brand_personality }}</p>
+        <p style="margin-bottom:12px">{{ analysis.brand_personality }}</p>
+        <div class="palette">
+          {% for color in analysis.color_palette %}
+            <div style="display: flex; flex-direction: column; align-items: center; margin: 0 5px;">
+              <div class="sw" data-color="{{ (color or '#ffffff')|lower }}" title="{{ color }}"></div>
+              <span style="font-size: 0.8rem; margin-top: 4px; color: #666;">{{ color }}</span>
+            </div>
+          {% endfor %}
+        </div>
         <div class="chips">
           {% for kw in analysis.mood_keywords %}
             <span>#{{ kw }}</span>
           {% endfor %}
         </div>
       </div>
-
+      {% if analysis.mood_images %}
       <div class="card">
-        <h3>🌈 Color Palette</h3>
-        <div class="palette">
-          {% for color in analysis.color_palette %}
-            <div class="sw" data-color="{{ (color or '#ffffff')|lower }}" title="{{ color }}"></div>
+        <h3>🖼️ Visual Mood Board</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 15px;">
+          {% for image_url in analysis.mood_images %}
+            <img src="{{ image_url }}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 8px;" alt="Mood board image">
           {% endfor %}
         </div>
-        <p><strong>Colors:</strong> {{ analysis.color_palette | join(', ') }}</p>
       </div>
-
+      {% endif %}
       <div class="card">
-        <h3>⚠️ Risks → Counter-moves</h3>
+        <h3>⚠️ Riskiest Assumption → Counter-move</h3>
         {% for r in analysis.key_risks %}
           <div class="list-item">{{ r }}</div>
         {% endfor %}
-        <h4 class="muted" style="margin-top:8px;">Counter-moves</h4>
+        <h4 style="color:#667eea;margin:12px 0 8px;font-size:0.95rem">Counter-moves</h4>
         {% for c in analysis.counter_moves %}
           <div class="list-item">{{ c }}</div>
         {% endfor %}
       </div>
 
       <div class="card">
-        <h3>🚀 Opportunities</h3>
+        <h3>🚀 Opportunities + Revenue</h3>
         {% for o in analysis.opportunities %}
           <div class="list-item">{{ o }}</div>
         {% endfor %}
+        <div class="subsection">
+          <h4>Revenue Model</h4>
+          <p>{{ analysis.revenue_model }}</p>
+        </div>
       </div>
 
       <div class="card">
         <h3>🔍 Similar Products</h3>
         {% for s in analysis.similar_products %}
-          <div class="list-item">{{ s }}</div>
-        {% endfor %}
-      </div>
-
-      <div class="card">
-        <h3>💰 Revenue Model</h3>
-        <p>{{ analysis.revenue_model }}</p>
-      </div>
-
-      <div class="card">
-        <h3>📣 GTM Channels</h3>
-        {% for g in analysis.gtm_channels %}
-          <div class="list-item">{{ g }}</div>
+          <div class="list-item">
+            <a href="https://www.google.com/search?q={{ s|urlencode }}" target="_blank" style="color:#667eea;text-decoration:none">
+              {{ s }} ↗
+            </a>
+          </div>
         {% endfor %}
       </div>
 
@@ -147,14 +169,13 @@
       </div>
 
       <div class="card">
-        <h3>📊 TAM/SAM/SOM (rough)</h3>
-        <p>{{ analysis.tamsam_som }}</p>
-      </div>
-
-      <div class="card">
         <h3>✅ Next Steps</h3>
         {% for step in analysis.next_steps %}
-          <div class="list-item">{{ loop.index }}. {{ step }}</div>
+          <div class="list-item">
+            <a href="#" onclick="getResourceLink('{{ step }}')" style="color:#667eea;text-decoration:none">
+              {{ loop.index }}. {{ step }} →
+            </a>
+          </div>
         {% endfor %}
       </div>
     </div>
@@ -162,46 +183,53 @@
     <div class="toolbar">
       <a href="{{ request.url_for('homepage') }}" class="btn">🔮 Analyze Another Idea</a>
       {% if record_id %}
-        <a class="btn" href="{{ request.url_for('download_json', rec_id=record_id) }}">⬇️ Download JSON</a>
-        <button class="btn" id="copyBtn" type="button">📋 Copy JSON</button>
-        <button class="btn" id="shareBtn" type="button">🔗 Share Link</button>
+        <button class="btn icon-btn" id="downloadBtn" title="Download PDF">⬇</button>
+        <button class="btn icon-btn" id="copyBtn" title="Copy Analysis">📋</button>
+        <button class="btn icon-btn" id="shareBtn" title="Share Link">🔗</button>
       {% endif %}
     </div>
   </div>
 
-  {% if record_id %}
-  <a class="btn sticky" href="{{ request.url_for('homepage') }}">+ New Analysis</a>
-  {% endif %}
-
-  
-<script id="analysis-data" type="application/json">
+  <script id="analysis-data" type="application/json">
 {{ analysis_json | tojson | safe }}
 </script>
 
-
 <script>
-  
+  // Apply color swatches
   document.querySelectorAll('.sw').forEach(el => {
     el.style.backgroundColor = el.dataset.color || '#ffffff';
   });
 
-  
   const dataNode = document.getElementById('analysis-data');
   let analysisObj = {};
   try { analysisObj = dataNode ? JSON.parse(dataNode.textContent) : {}; } catch (_) {}
 
-  const analysisJsonPretty = JSON.stringify(analysisObj, null, 2);
+  const analysisText = JSON.stringify(analysisObj, null, 2);
   const recordId = "{{ record_id or '' }}";
 
-  const copyBtn  = document.getElementById('copyBtn');
+  // Button functionality
+  const downloadBtn = document.getElementById('downloadBtn');
+  const copyBtn = document.getElementById('copyBtn');
   const shareBtn = document.getElementById('shareBtn');
+
+  if (downloadBtn) {
+    downloadBtn.addEventListener('click', () => {
+      const blob = new Blob([analysisText], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `eye-o-analysis-${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+  }
 
   if (copyBtn) {
     copyBtn.addEventListener('click', async () => {
       try {
-        await navigator.clipboard.writeText(analysisJsonPretty);
-        copyBtn.textContent = "✅ Copied";
-        setTimeout(() => copyBtn.textContent = "📋 Copy JSON", 1500);
+        await navigator.clipboard.writeText(analysisText);
+        copyBtn.innerHTML = '✅';
+        setTimeout(() => copyBtn.innerHTML = '📋', 1500);
       } catch (e) {
         alert("Copy failed");
       }
@@ -213,12 +241,33 @@
       const url = `${location.origin}/view/${recordId}`;
       try {
         await navigator.clipboard.writeText(url);
-        shareBtn.textContent = "✅ Link Copied";
-        setTimeout(() => shareBtn.textContent = "🔗 Share Link", 1500);
+        shareBtn.innerHTML = '✅';
+        setTimeout(() => shareBtn.innerHTML = '🔗', 1500);
       } catch (e) {
         prompt("Copy this link:", url);
       }
     });
+  }
+
+  // Resource links for next steps
+  function getResourceLink(step) {
+    const resources = {
+      'Market research': 'https://surveymonkey.com',
+      'MVP build': 'https://replit.com',
+      'User testing': 'https://usertesting.com',
+      'Beta launch': 'https://producthunt.com',
+      'Beta testing': 'https://testflight.apple.com'
+    };
+    
+    const match = Object.keys(resources).find(key => 
+      step.toLowerCase().includes(key.toLowerCase())
+    );
+    
+    if (match) {
+      window.open(resources[match], '_blank');
+    } else {
+      window.open(`https://www.google.com/search?q=${encodeURIComponent(step + ' tools')}`, '_blank');
+    }
   }
 </script>
 </body>

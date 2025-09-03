@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>🧠 Product Idea Oracle</title>
+  <title>Eye-O - AI Product Intelligence</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -15,72 +15,151 @@
       background: #fff; border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1);
       max-width: 640px; width: 100%; padding: 40px; text-align: center; position: relative;
     }
-    .oracle-icon { font-size: 4rem; margin-bottom: 20px; }
+    .oracle-icon { font-size: 4rem; margin-bottom: 20px; animation: pulse 3s infinite; }
+    @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
     h1 { color: #2c3e50; margin-bottom: 10px; font-size: 2.5rem; font-weight: 700; }
-    .subtitle { color: #7f8c8d; margin-bottom: 30px; font-size: 1.1rem; }
+    .subtitle { color: #7f8c8d; margin-bottom: 30px; font-size: 1.1rem; line-height: 1.5; }
     .form-group { margin-bottom: 20px; text-align: left; }
     label { display: block; margin-bottom: 10px; font-weight: 600; color: #2c3e50; }
     textarea {
       width: 100%; padding: 15px; border: 2px solid #ecf0f1; border-radius: 10px; resize: vertical; min-height: 120px; font-size: 1rem;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
     }
-    textarea:focus { outline: none; border-color: #667eea; }
-    .row { display: flex; align-items: center; gap: 10px; margin: 10px 0 20px; }
+    textarea:focus { 
+      outline: none; 
+      border-color: #667eea; 
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    .row { display: flex; align-items: center; gap: 10px; margin: 15px 0 25px; justify-content: space-between; }
+    .checkbox-group { display: flex; align-items: center; gap: 8px; }
+    .checkbox-group input[type="checkbox"] { transform: scale(1.2); }
+    .history-link { color: #667eea; text-decoration: none; font-weight: 500; }
+    .history-link:hover { text-decoration: underline; }
     .btn {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white; border: none; padding: 15px 40px; border-radius: 50px; font-size: 1.1rem; font-weight: 600; cursor: pointer; width: 100%;
-      transition: transform 0.2s ease;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
-    .btn:hover { transform: translateY(-2px); }
-    .error { background: #e74c3c; color: white; padding: 12px; border-radius: 10px; margin-bottom: 16px; }
-    .example { background: #f8f9fa; border-left: 4px solid #667eea; padding: 15px; margin: 20px 0; text-align: left; border-radius: 0 10px 10px 0; }
-
-    /* Loading overlay */
+    .btn:hover { 
+      transform: translateY(-2px); 
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    }
+    .btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .error { 
+      background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+      color: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; 
+      border: none; font-weight: 500;
+    }
+    .example { 
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      border-left: 4px solid #667eea; padding: 18px; margin: 25px 0; text-align: left; border-radius: 0 10px 10px 0; 
+    }
+    .example-title { font-weight: 600; color: #2c3e50; margin-bottom: 8px; }
+    /* Enhanced loading overlay */
     .loading {
-      display: none; position: absolute; inset: 0; background: rgba(255,255,255,0.8);
-      align-items: center; justify-content: center; border-radius: 20px;
+      display: none; position: absolute; inset: 0; background: rgba(255,255,255,0.95);
+      align-items: center; justify-content: center; border-radius: 20px; flex-direction: column;
     }
-    .ball { font-size: 48px; animation: pulse 1.2s infinite ease-in-out; }
-    @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
+    .loading-orb { font-size: 60px; animation: float 2s infinite ease-in-out; margin-bottom: 15px; }
+    .loading-text { color: #667eea; font-weight: 600; animation: fade 1.5s infinite ease-in-out; }
+    @keyframes float { 
+      0%, 100% { transform: translateY(0px) rotate(0deg); } 
+      50% { transform: translateY(-10px) rotate(180deg); } 
+    }
+    @keyframes fade { 
+      0%, 100% { opacity: 0.5; } 
+      50% { opacity: 1; } 
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="oracle-icon">🔮</div>
-    <h1>Product Idea Oracle</h1>
-    <p class="subtitle">Transform your ideas into actionable insights with AI-powered analysis</p>
-
+    <h1>Eye-O</h1>
+    <p class="subtitle">Transform your product ideas into strategic insights with AI-powered analysis</p>
+    
     {% if error %}
       <div class="error">{{ error }}</div>
     {% endif %}
-
+    
     <form method="POST" action="{{ request.url_for('analyze') }}" id="ideaForm">
       <div class="form-group">
-        <label for="idea">Describe your product idea:</label>
-        <textarea name="idea" id="idea" placeholder="Example: An app that uses AI to..." required></textarea>
+        <label for="idea">Tell me your idea in as much or little detail as you want...</label>
+        <textarea 
+          name="idea" 
+          id="idea" 
+          placeholder="An app that connects dog owners for playdates based on their pets' personalities and energy levels..."
+          required
+        ></textarea>
       </div>
+      
       <div class="row">
-        <label style="display:flex;align-items:center;gap:8px;">
-          <input type="checkbox" name="use_local" value="1"> Use free local model (dev)
-        </label>
-        <a href="{{ request.url_for('history') }}" style="margin-left:auto;text-decoration:none;">History</a>
+        <div class="checkbox-group">
+          <input type="checkbox" name="use_local" value="1" id="localModel">
+          <label for="localModel" style="margin:0; font-weight:500; color:#667eea;">Use free local model (dev)</label>
+        </div>
+        <a href="{{ request.url_for('history') }}" class="history-link">History</a>
       </div>
-      <button type="submit" class="btn" id="submitBtn">🧠 Analyze My Idea</button>
+      
+      <button type="submit" class="btn" id="submitBtn">
+        <span id="btnText">Analyze My Idea</span>
+      </button>
     </form>
-
+    
     <div class="example">
-      <strong>💡 Pro Tip:</strong> Include your target audience, key features, and the core problem.
+      <div class="example-title">💡 Pro Tip:</div>
+      Include your target audience, key features, and the core problem you're solving for the most insightful analysis.
     </div>
-
-    <div class="loading" id="loading"><div class="ball">🔮</div></div>
+    
+    <div class="loading" id="loading">
+      <div class="loading-orb">🔮</div>
+      <div class="loading-text">Analyzing your idea...</div>
+    </div>
   </div>
-
+  
   <script>
     const form = document.getElementById('ideaForm');
     const btn = document.getElementById('submitBtn');
+    const btnText = document.getElementById('btnText');
     const overlay = document.getElementById('loading');
-    form.addEventListener('submit', () => {
+    const textarea = document.getElementById('idea');
+    
+    // Enhanced form submission with better UX
+    form.addEventListener('submit', (e) => {
+      if (!textarea.value.trim()) {
+        e.preventDefault();
+        textarea.focus();
+        return;
+      }
+      
       btn.disabled = true;
+      btnText.textContent = 'Processing...';
       overlay.style.display = 'flex';
+      
+      // Add timeout fallback in case something goes wrong
+      setTimeout(() => {
+        if (btn.disabled) {
+          btn.disabled = false;
+          btnText.textContent = 'Analyze My Idea';
+          overlay.style.display = 'none';
+          alert('Request timed out. Please try again.');
+        }
+      }, 30000); // 30 second timeout
+    });
+    
+    // Character counter and dynamic resize
+    textarea.addEventListener('input', function() {
+      this.style.height = 'auto';
+      this.style.height = Math.min(this.scrollHeight, 200) + 'px';
+    });
+    
+    // Auto-focus on textarea
+    window.addEventListener('load', () => {
+      textarea.focus();
     });
   </script>
 </body>

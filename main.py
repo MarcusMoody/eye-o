@@ -14,6 +14,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from openai import OpenAI
+from prompt_testing import log_prompt_test
 
 # -------------------------
 # Setup & config
@@ -25,6 +26,9 @@ DEFAULT_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o")
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://127.0.0.1:11434/api/generate")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama2:7b")
 ENABLE_EXTERNAL_CHECKS = os.getenv("ENABLE_EXTERNAL_CHECKS", "true").lower() == "true"
+UNSPLASH_ACCESS_KEY = os.getenv("UNSPLASH_ACCESS_KEY")
+NAMECHEAP_API_KEY = os.getenv("NAMECHEAP_API_KEY")
+NAMECHEAP_USERNAME = os.getenv("NAMECHEAP_USERNAME")
 
 print("OLLAMA_MODEL =", OLLAMA_MODEL)
 print("OLLAMA_URL =", OLLAMA_URL)
@@ -91,31 +95,92 @@ def ensure_list(val: Any) -> List[Any]:
         return []
     return [val]
 
+def get_score_label(score: int) -> str:
+    """Convert numeric score to contextual label"""
+    if score >= 9: return "Lock in now!"
+    elif score >= 7: return "Strong potential"
+    elif score >= 5: return "Good foundation" 
+    elif score >= 3: return "Needs work"
+    else: return "High risk"
+
 def normalize_analysis(data: Dict[str, Any]) -> Dict[str, Any]:
-    """Ensure keys exist with sane defaults so templates never crash."""
+    """Restructured for new Product/Target sections"""
+    # Select best name from the three options
+    product_names = ensure_list(data.get("product_names") or ["InnovatePro", "NextGen", "SmartConnect"])
+    selected_name = product_names[0] if product_names else "InnovatePro"
+    
     return {
+        # Scoring with contextual labels
         "viability_score": int(data.get("viability_score", 6)),
+        "score_label": get_score_label(int(data.get("viability_score", 6))),
         "score_explanation": data.get("score_explanation", "Requires further market validation"),
-        "positioning": data.get("positioning", "Clear, differentiated positioning still needed."),
-        "target_users": data.get("target_users", "Early adopters and brand-conscious users"),
+        
+        # Product section (renamed from Positioning)
+        "product": {
+            "selected_name": selected_name,
+            "all_names": product_names,
+            "positioning": data.get("positioning", "Clear, differentiated positioning needed"),
+            "tagline": data.get("tagline", "Innovation made simple")
+        },
+        
+        # Target section (consolidated)
+        "target": {
+            "users": data.get("target_users", "Early adopters and tech-savvy consumers"),
+            "how": ensure_list(data.get("gtm_channels") or ["Social media", "Content marketing", "Partnerships"]),
+            "my_focus": data.get("tamsam_som", "Early-stage market validation needed")
+        },
+        
+        # Keep existing structure for other sections
         "core_pain_points": ensure_list(data.get("core_pain_points") or ["Pain point 1", "Pain point 2", "Pain point 3"]),
-        "product_names": ensure_list(data.get("product_names") or ["InnovatePro", "NextGen", "SmartConnect"]),
-        "tagline": data.get("tagline", "Innovation made simple."),
         "brand_personality": data.get("brand_personality", "Modern, confident, user-centric"),
-        "mood_keywords": ensure_list(data.get("mood_keywords") or ["innovative", "reliable", "modern", "bold", "clean"]),
+        "mood_keywords": ensure_list(data.get("mood_keywords") or ["innovative", "reliable", "modern"]),
         "color_palette": ensure_list(data.get("color_palette") or ["#667eea", "#764ba2", "#f093fb"]),
         "key_risks": ensure_list(data.get("key_risks") or ["Competition", "Adoption", "Execution"]),
-        "counter_moves": ensure_list(data.get("counter_moves") or ["Differentiate on brand", "Nail onboarding", "Partner GTM"]),
-        "opportunities": ensure_list(data.get("opportunities") or ["Growing creator tools", "SMB demand", "AI assist boom"]),
+        "counter_moves": ensure_list(data.get("counter_moves") or ["Differentiate", "Optimize onboarding", "Partner strategy"]),
+        "opportunities": ensure_list(data.get("opportunities") or ["Growing market", "Technology advancement", "User demand"]),
         "similar_products": ensure_list(data.get("similar_products") or ["Competitor A", "Competitor B", "Competitor C"]),
         "revenue_model": data.get("revenue_model", "Subscription with freemium"),
-        "gtm_channels": ensure_list(data.get("gtm_channels") or ["TikTok UGC", "Founder-led LinkedIn", "Community partnerships"]),
-        "launch_30_day_plan": ensure_list(data.get("launch_30_day_plan") or [
-            "Define ICP + pain points", "Ship MVP", "Seed 10 users", "Iterate weekly", "Share results publicly"
-        ]),
-        "tamsam_som": data.get("tamsam_som", "TAM/SAM/SOM rough: early-stage brand tooling for solopreneurs and SMBs."),
-        "next_steps": ensure_list(data.get("next_steps") or ["Market research", "MVP build", "User testing", "Beta launch", "Iterate GTM"]),
+        "launch_30_day_plan": ensure_list(data.get("launch_30_day_plan") or ["Research", "Build MVP", "Test", "Launch", "Iterate", "Scale"]),
+        "next_steps": ensure_list(data.get("next_steps") or ["Market research", "MVP build", "User testing", "Beta launch", "Scale"]),
+        "mood_images": data.get("mood_images", [])
     }
+
+
+# -------------------------
+# API integrations
+# -------------------------
+def get_mood_images(keywords: List[str]) -> List[str]:
+    """Get mood board images from Unsplash"""
+    if not UNSPLASH_ACCESS_KEY or not ENABLE_EXTERNAL_CHECKS:
+        return []
+    
+    images = []
+    for keyword in keywords[:3]:  # Limit to 3 keywords
+        try:
+            response = requests.get(
+                f"https://api.unsplash.com/search/photos",
+                params={"query": keyword, "per_page": 1, "orientation": "landscape"},
+                headers={"Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"},
+                timeout=10
+            )
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("results"):
+                    images.append(data["results"][0]["urls"]["small"])
+        except Exception as e:
+            print(f"Unsplash error for {keyword}: {e}")
+    
+    return images
+
+def check_uspto_trademark(name: str) -> Dict[str, Any]:
+    """Check trademark status via USPTO API"""
+    try:
+        # Simple check - in production, implement full USPTO TESS API
+        url = f"https://tmsapi.uspto.gov/api/v1/trademark/search"
+        # For now, return mock data
+        return {"status": "available", "conflicts": 0}
+    except Exception as e:
+        return {"status": "unknown", "error": str(e)}
 
 
 # -------------------------
@@ -123,20 +188,41 @@ def normalize_analysis(data: Dict[str, Any]) -> Dict[str, Any]:
 # -------------------------
 def build_oracle_prompt(idea: str) -> str:
     return f"""
-You are the Moody Maestro Oracle: witty, precise, street-smart strategist.
-Return ONLY valid JSON with these keys:
-viability_score (1-10), score_explanation, positioning, target_users,
-core_pain_points (3), product_names (3), tagline, brand_personality,
-mood_keywords (5), color_palette (3 hex), key_risks (3),
-counter_moves (3), opportunities (3), similar_products (3),
-revenue_model, gtm_channels (3), launch_30_day_plan (5 steps),
-tamsam_som (rough text), next_steps (5).
-
-Use concise, concrete language. No hype.
+You are a strategic product analyst. Analyze this product idea and return ONLY valid JSON.
 
 Product Idea: "{idea}"
 
-Return ONLY a single JSON object. No explanations, no prose, no backticks.\n\n
+Return JSON with this exact structure:
+{{
+    "viability_score": [1-10],
+    "score_explanation": "[brief explanation]",
+    "positioning": "[clear market positioning statement]",
+    "target_users": "[specific user demographics and characteristics]",
+    "product_names": ["[creative_memorable_name1]", "[creative_memorable_name2]", "[creative_memorable_name3]"],
+    "tagline": "[catchy, memorable tagline under 8 words]",
+    "brand_personality": "[brand character and tone description]",
+    "mood_keywords": ["[aesthetic_word1]", "[vibe_word2]", "[feeling_word3]", "[style_word4]", "[energy_word5]"],
+    "color_palette": ["#hexcode1", "#hexcode2", "#hexcode3"],
+    "core_pain_points": ["[specific_pain1]", "[specific_pain2]", "[specific_pain3]"],
+    "key_risks": ["[biggest_risk1]", "[significant_risk2]", "[potential_risk3]"],
+    "counter_moves": ["[strategic_counter1]", "[tactical_counter2]", "[defensive_counter3]"],
+    "opportunities": ["[market_opportunity1]", "[growth_opportunity2]", "[competitive_opportunity3]"],
+    "similar_products": ["[RealCompetitor1]", "[RealCompetitor2]", "[RealCompetitor3]"],
+    "revenue_model": "[specific revenue approach with reasoning]",
+    "gtm_channels": ["[specific_channel1]", "[specific_channel2]", "[specific_channel3]"],
+    "tamsam_som": "[realistic market size assessment with context]",
+    "launch_30_day_plan": ["[Day1-5_action]", "[Day6-12_action]", "[Day13-20_action]", "[Day21-25_action]", "[Day26-30_action]", "[Post-launch_action]"],
+    "next_steps": ["[immediate_step1]", "[near_term_step2]", "[development_step3]", "[testing_step4]", "[launch_step5]"]
+}}
+
+Requirements:
+- Product names must be creative, brandable, NOT generic (avoid "Pro", "Solution", "Platform")
+- Use real competitor/company names when possible
+- Color palette must be valid hex codes starting with #
+- GTM channels should be specific platforms/methods, not general categories
+- All arrays must have the exact number of items specified
+- Be concrete and actionable, avoid vague business speak
+- Return ONLY the JSON object, no other text
 """.strip()
 
 
@@ -152,11 +238,19 @@ def analyze_idea_with_openai(idea: str) -> Dict[str, Any]:
             model=DEFAULT_MODEL,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.7,
-            max_tokens=1200,
+            max_tokens=1500,
         )
         content = resp.choices[0].message.content.strip()
         json_str = balanced_json_or_all(content)
         data = json.loads(json_str)
+        
+        # Add mood images based on keywords
+        mood_keywords = data.get("mood_keywords", [])
+        data["mood_images"] = get_mood_images(mood_keywords)
+        
+        # After generating analysis
+        log_prompt_test("v1.0", idea, data, "baseline test")
+        
         return normalize_analysis(data)
     except Exception as e:
         print(f"OpenAI API Error: {e}")
@@ -167,7 +261,7 @@ def analyze_idea_with_local(idea: str) -> Dict[str, Any]:
     try:
         r = requests.post(
             OLLAMA_URL,
-            json={"model": OLLAMA_MODEL, "prompt": prompt, "stream": False, "format": "json", "options": { "num_predict": 800}},
+            json={"model": OLLAMA_MODEL, "prompt": prompt, "stream": False, "format": "json", "options": { "num_predict": 1000}},
             timeout=120,
         )
         r.raise_for_status()
@@ -178,13 +272,17 @@ def analyze_idea_with_local(idea: str) -> Dict[str, Any]:
         try:
             data = json.loads(raw)
         except json.JSONDecodeError:
-            
             json_str = balanced_json_or_all(raw)
             data = json.loads(json_str)
+            
+        # Add mood images for local model too
+        mood_keywords = data.get("mood_keywords", [])
+        data["mood_images"] = get_mood_images(mood_keywords)
+        
         return normalize_analysis(data)
     except Exception as e:
-        
-        try: print("Ollama raw (truncated):", r.text[:500])
+        try: 
+            print("Ollama raw (truncated):", r.text[:500])
         except: 
             pass
         print(f"Ollama error: {e}")
@@ -195,21 +293,14 @@ def analyze_idea_with_local(idea: str) -> Dict[str, Any]:
 # Domain & handle checks
 # -------------------------
 def domain_available(name: str, ext: str) -> bool:
-    """
-    Simple availability heuristic:
-    - If DNS A/NS records resolve -> taken
-    - If NXDOMAIN -> likely available
-    - On error/timeouts -> treat as unknown => False (i.e., show as taken)
-    """
+    """Simple DNS-based domain availability check"""
     domain = f"{name.lower().replace(' ', '').replace('-', '')}{ext}"
     try:
-        # Try A record first
         dns.resolver.resolve(domain, "A")
         return False  # resolves => taken
     except dns.resolver.NXDOMAIN:
         return True   # doesn't exist => likely available
     except Exception:
-        # Try NS as a secondary
         try:
             dns.resolver.resolve(domain, "NS")
             return False
@@ -220,7 +311,7 @@ def domain_available(name: str, ext: str) -> bool:
 
 def check_domains(names: List[str], extensions=None) -> Dict[str, Dict[str, bool]]:
     if extensions is None:
-        extensions = [".com", ".io", ".ai"]
+        extensions = [".com", ".io", ".ai", ".net", ".co"]
     availability: Dict[str, Dict[str, bool]] = {}
     for name in names:
         availability[name] = {}
@@ -232,19 +323,15 @@ def check_domains(names: List[str], extensions=None) -> Dict[str, Dict[str, bool
     return availability
 
 def check_social_handles(names: List[str]) -> Dict[str, Dict[str, Optional[bool]]]:
-    """
-    Quick 'availability' check by requesting profile pages.
-    - True => 404 (not found) => likely available
-    - False => 200/302 => likely taken
-    - None => unknown/error
-    """
+    """Quick availability check by requesting profile pages"""
     platforms = {
         "x": "https://x.com/{}",
         "instagram": "https://www.instagram.com/{}/",
         "tiktok": "https://www.tiktok.com/@{}",
     }
     out: Dict[str, Dict[str, Optional[bool]]] = {}
-    headers = {"User-Agent": "Mozilla/5.0 (Eye-O)"}
+    headers = {"User-Agent": "Mozilla/5.0 (Eye-O Bot)"}
+    
     for raw in names:
         handle = raw.lower().replace(" ", "").replace("-", "")
         out[raw] = {}
@@ -253,14 +340,13 @@ def check_social_handles(names: List[str]) -> Dict[str, Dict[str, Optional[bool]
                 out[raw][p] = None
                 continue
             try:
-                # HEAD is often blocked; use GET with small timeout
                 r = requests.get(url_tpl.format(handle), headers=headers, timeout=6, allow_redirects=True)
                 if r.status_code == 404:
-                    out[raw][p] = True
+                    out[raw][p] = True  # Available
                 elif 200 <= r.status_code < 400:
-                    out[raw][p] = False
+                    out[raw][p] = False  # Taken
                 else:
-                    out[raw][p] = None
+                    out[raw][p] = None   # Unknown
             except Exception:
                 out[raw][p] = None
     return out
@@ -290,8 +376,10 @@ async def analyze(
         else:
             analysis = analyze_idea_with_openai(idea)
 
-        domains = check_domains(analysis.get("product_names", []))
-        handles = check_social_handles(analysis.get("product_names", []))
+        # Check domains for the selected product name
+        selected_name = analysis.get("product", {}).get("selected_name", "")
+        domains = check_domains([selected_name]) if selected_name else {}
+        handles = check_social_handles([selected_name]) if selected_name else {}
 
         # Save to DB
         rec_id = str(uuid.uuid4())
@@ -340,8 +428,12 @@ async def view_record(request: Request, rec_id: str):
         raise HTTPException(status_code=404, detail="Record not found")
     idea = row[0]
     analysis = json.loads(row[1])
-    domains = check_domains(analysis.get("product_names", []))
-    handles = check_social_handles(analysis.get("product_names", []))
+    
+    # Re-check domains/handles for this record
+    selected_name = analysis.get("product", {}).get("selected_name", "")
+    domains = check_domains([selected_name]) if selected_name else {}
+    handles = check_social_handles([selected_name]) if selected_name else {}
+    
     return templates.TemplateResponse(
         "results.html",
         {
@@ -368,8 +460,40 @@ async def download_json(rec_id: str):
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy"}
+    return {"status": "healthy", "version": "2.0"}
 
+@app.get("/logs")
+def get_logs():
+    """View recent prompt testing logs"""
+    try:
+        with open("prompt_tests.jsonl", "r") as f:
+            logs = [json.loads(line) for line in f.readlines()]
+        return {"logs": logs[-50:], "total": len(logs)}
+    except FileNotFoundError:
+        return {"logs": [], "total": 0}
+
+@app.get("/logs/analysis")
+def log_analysis():
+    """Quick analysis of prompt performance"""
+    try:
+        with open("prompt_tests.jsonl", "r") as f:
+            logs = [json.loads(line) for line in f.readlines()]
+        
+        if not logs:
+            return {"message": "No logs found"}
+        
+        scores = [log.get("viability_score", 0) for log in logs]
+        return {
+            "total_tests": len(logs),
+            "avg_score": sum(scores) / len(scores),
+            "score_distribution": {
+                "high (7-10)": len([s for s in scores if s >= 7]),
+                "medium (4-6)": len([s for s in scores if 4 <= s < 7]),
+                "low (1-3)": len([s for s in scores if s < 4])
+            }
+        }
+    except:
+        return {"error": "Could not analyze logs"}
 
 # -------------------------
 # Local dev entrypoint
