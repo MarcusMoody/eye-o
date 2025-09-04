@@ -197,26 +197,26 @@ Return JSON with this exact structure:
     "viability_score": [1-10],
     "score_explanation": "[brief explanation]",
     "positioning": "[clear market positioning statement]",
-    "target_users": "[specific user demographics and characteristics]",
-    "product_names": ["[creative_memorable_name1]", "[creative_memorable_name2]", "[creative_memorable_name3]"],
-    "tagline": "[catchy, memorable tagline under 8 words]",
+    "target_users": "[specific, short yet highly descriptive user demographics and characteristics]",
+    "product_names": [Give 3 original, memorable, innovative, relative and immediately usable product names that relate to the specific product and business. For a meme app: "MeMe (pronounced Mimi)", For a memory palace generator AI app: "Memory's Past". Be as creative as possible.],
+    "tagline": "[catchy, original, and memorable tagline under 8 words]",
     "brand_personality": "[brand character and tone description]",
-    "mood_keywords": ["[aesthetic_word1]", "[vibe_word2]", "[feeling_word3]", "[style_word4]", "[energy_word5]"],
-    "color_palette": ["#hexcode1", "#hexcode2", "#hexcode3"],
+    "mood_keywords": [Give 5 words that describe the specific aesthetic, vibe, feeling, style, and energy of the specific product],
+    "color_palette": [Give 3 beautiful, stylistically and aesthetically pleasing colors and their hexcodes],
     "core_pain_points": ["[specific_pain1]", "[specific_pain2]", "[specific_pain3]"],
-    "key_risks": ["[biggest_risk1]", "[significant_risk2]", "[potential_risk3]"],
-    "counter_moves": ["[strategic_counter1]", "[tactical_counter2]", "[defensive_counter3]"],
-    "opportunities": ["[market_opportunity1]", "[growth_opportunity2]", "[competitive_opportunity3]"],
-    "similar_products": ["[RealCompetitor1]", "[RealCompetitor2]", "[RealCompetitor3]"],
-    "revenue_model": "[specific revenue approach with reasoning]",
-    "gtm_channels": ["[specific_channel1]", "[specific_channel2]", "[specific_channel3]"],
-    "tamsam_som": "[realistic market size assessment with context]",
-    "launch_30_day_plan": ["[Day1-5_action]", "[Day6-12_action]", "[Day13-20_action]", "[Day21-25_action]", "[Day26-30_action]", "[Post-launch_action]"],
-    "next_steps": ["[immediate_step1]", "[near_term_step2]", "[development_step3]", "[testing_step4]", "[launch_step5]"]
+    "key_risks": [Give top 3 riskiest assumptions about the specific product],
+    "counter_moves": [Give 3 strategic, tactical, and defensive counters to the products top 3 riskiest assumptions],
+    "opportunities": [Based on this specific product idea, list 3 opportunities in the realm of marketing, growth, and competition failures],
+    "similar_products": [Research and name 3 REAL competing products/companies that actually exist, not placeholders],
+    "revenue_model": "[Based on this specific product, give a tailored, logical, and specific revenue approach. Nothing simple and basic like "freemium mode, premium features". Be specific to the product and think of revenue for the product in ways that may not have been pursued before, but will increase revenue],
+    "gtm_channels": [Based on this specific product idea, list 3 concrete marketing channels with platform names. Be specific - instead of "social media" say "TikTok videos" or "LinkedIn posts". Instead of "partnerships" say "partnership with [specific type of company]". For a meme app: "TikTok creator partnerships", "Reddit r/memes community", "Discord meme servers". For B2B: "LinkedIn cold outreach", "Product Hunt launch", "Y Combinator Slack". Be this specific.],
+    "tamsam_som": "Based on this specific product idea, take a realistic market size assessment with context, and briefly explain how to aquire a products SOM. Please explain in terms that a high school graduate would understand],
+    "launch_30_day_plan": [Based on this specific product idea, Create 6 actionable steps specific to THIS product type, not a generic startup checklist],
+    "next_steps": [Based on this specific product idea, list 6 steps for users to get the product from idea to launch. An example of an immediate first step would be "Render Working Code" and the link should be to Replit]
 }}
 
 Requirements:
-- Product names must be creative, brandable, NOT generic (avoid "Pro", "Solution", "Platform")
+- Product names must be creative, brandable, NOT generic (avoid "Pro", "Solution", "Platform"), innovative
 - Use real competitor/company names when possible
 - Color palette must be valid hex codes starting with #
 - GTM channels should be specific platforms/methods, not general categories
@@ -249,7 +249,7 @@ def analyze_idea_with_openai(idea: str) -> Dict[str, Any]:
         data["mood_images"] = get_mood_images(mood_keywords)
         
         # After generating analysis
-        log_prompt_test("v1.0", idea, data, "baseline test")
+        log_prompt_test("v1.0", idea, data)
         
         return normalize_analysis(data)
     except Exception as e:

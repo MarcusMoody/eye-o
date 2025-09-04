@@ -2,7 +2,7 @@ import json
 from datetime import datetime
 import os
 
-def log_prompt_test(prompt_version, test_idea, analysis_result, notes=""):
+def log_prompt_test(prompt_version, test_idea, analysis_result, your_assessment="", notes=""):
     """Log prompt testing results"""
     log_entry = {
         "timestamp": datetime.now().isoformat(),
@@ -10,6 +10,7 @@ def log_prompt_test(prompt_version, test_idea, analysis_result, notes=""):
         "test_idea": test_idea,
         "viability_score": analysis_result.get("viability_score"),
         "selected_name": analysis_result.get("product", {}).get("selected_name"),
+        "your_assessment": your_assessment,
         "notes": notes
     }
     
