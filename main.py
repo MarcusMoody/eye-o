@@ -156,7 +156,7 @@ def normalize_analysis(data: Dict[str, Any]) -> Dict[str, Any]:
 # API integrations
 # -------------------------
 def get_mood_images(keywords: List[str]) -> List[str]:
-    """Get mood board images from Unsplash"""
+    """Based on this specific product idea, Get mood board images from Unsplash"""
     if not UNSPLASH_ACCESS_KEY or not ENABLE_EXTERNAL_CHECKS:
         return []
     
@@ -200,13 +200,13 @@ Product Idea: "{idea}"
 
 Return JSON with this exact structure:
 {{
-    "viability_score": [1-10],
-    "score_explanation": "[brief explanation]",
-    "positioning": "[clear market positioning statement]",
-    "target_users": "[specific, short yet highly descriptive user demographics and characteristics]",
+    "viability_score": [Based on this specific product idea, give a comprehensive 1-10 score of the business idea taking into accountability originality, it solving a real-world problem, growth potential, and all criteria of a potentially successful business idea],
+    "score_explanation": "[Based on the specific product idea, give a brief explanation of the score]",
+    "positioning": "[Based on this specific product idea, give a clear business market positioning statement]",
+    "target_users": "[Based on this specific product idea, give specific, short yet highly descriptive user demographics and characteristics]",
     "product_names": [Give 3 original, memorable, innovative, relative and immediately usable product names that relate to the specific product and business. For a meme app: "MeMe (pronounced Mimi)", For a memory palace generator AI app: "Memory's Past". Be as creative as possible.],
     "tagline": "[catchy, original, and memorable tagline under 8 words]",
-    "brand_personality": "[brand character and tone description]",
+    "brand_personality": "[based on this specific product idea, give a viable brand character and tone description]",
     "mood_keywords": [Give 5 words that describe the specific aesthetic, vibe, feeling, style, and energy of the specific product],
     "color_palette": [Give 3 beautiful, stylistically and aesthetically pleasing colors and their hexcodes],
     "core_pain_points": ["[specific_pain1]", "[specific_pain2]", "[specific_pain3]"],

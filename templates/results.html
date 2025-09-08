@@ -216,27 +216,42 @@
   const shareBtn = document.getElementById('shareBtn');
 
   if (downloadBtn) {
-    downloadBtn.addEventListener('click', () => {
-      const blob = new Blob([analysisText], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `eye-o-analysis-${Date.now()}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-    });
+  downloadBtn.addEventListener('click', () => {
+    // Call PDF endpoint instead of creating a JSON blob
+    window.location.href = `/download/${recordId}`;
+  });
   }
 
   if (copyBtn) {
-    copyBtn.addEventListener('click', async () => {
-      try {
-        await navigator.clipboard.writeText(analysisText);
-        copyBtn.innerHTML = '✅';
-        setTimeout(() => copyBtn.innerHTML = '📋', 1500);
-      } catch (e) {
-        alert("Copy failed");
-      }
-    });
+  copyBtn.addEventListener('click', async () => {
+    // Format the analysis data nicely
+    const formatted = `EYE-O ANALYSIS REPORT
+    
+  Idea: ${analysisObj.idea || 'N/A'}
+  Score: ${analysisObj.viability_score || 'N/A'}/10
+  Product Name: ${analysisObj.product?.selected_name || 'N/A'}
+  Tagline: ${analysisObj.product?.tagline || 'N/A'}
+
+  POSITIONING:
+  ${analysisObj.product?.positioning || 'N/A'}
+
+  TARGET USERS:
+  ${analysisObj.target?.users || 'N/A'}
+
+  REVENUE MODEL:
+  ${analysisObj.revenue_model || 'N/A'}
+
+  NEXT STEPS:
+  ${(analysisObj.next_steps || []).map((step, i) => `${i+1}. ${step}`).join('\n')}`;
+
+    try {
+      await navigator.clipboard.writeText(formatted);
+      copyBtn.innerHTML = '✅';
+      setTimeout(() => copyBtn.innerHTML = '📋', 1500);
+    } catch (e) {
+      alert("Copy failed");
+    }
+  });
   }
 
   if (shareBtn && recordId) {
