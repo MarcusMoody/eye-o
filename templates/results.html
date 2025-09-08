@@ -31,6 +31,9 @@
     .sticky{position:fixed;right:16px;bottom:16px}
     pre{background:#0b1021;color:#d0e3ff;padding:14px;border-radius:10px;overflow:auto;max-height:300px}
     .muted{color:#2c3e50;font-size:.95rem}
+    .handle-available{color:#27ae60;font-weight:700}
+    .handle-taken{color:#e74c3c;font-weight:700}
+    .handle-unknown{color:#9b59b6;font-weight:700}
   </style>
 </head>
 <body>
@@ -68,10 +71,10 @@
           </div>
           {% if handles and handles.get(analysis.product.selected_name) %}
             {% set h = handles.get(analysis.product.selected_name) %}
-            <div class="domain-check muted" style="margin-top:8px; color: #2c3e50;">
-              IG: {{ '✓' if h.instagram is true else ('?' if h.instagram is none else '✗') }} •
-              X: {{ '✓' if h.x is true else ('?' if h.x is none else '✗') }} •
-              TikTok: {{ '✓' if h.tiktok is true else ('?' if h.tiktok is none else '✗') }}
+            <div class="domain-check" style="margin-top:8px;">
+              IG: <span class="{% if h.instagram is true %}handle-available{% elif h.instagram is false %}handle-taken{% else %}handle-unknown{% endif %}">{{ '✓' if h.instagram is true else ('?' if h.instagram is none else '✗') }}</span> •
+              X: <span class="{% if h.x is true %}handle-available{% elif h.x is false %}handle-taken{% else %}handle-unknown{% endif %}">{{ '✓' if h.x is true else ('?' if h.x is none else '✗') }}</span> •
+              TikTok: <span class="{% if h.tiktok is true %}handle-available{% elif h.tiktok is false %}handle-taken{% else %}handle-unknown{% endif %}">{{ '✓' if h.tiktok is true else ('?' if h.tiktok is none else '✗') }}</span>
             </div>
           {% endif %}
         </div>

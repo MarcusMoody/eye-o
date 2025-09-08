@@ -3,6 +3,7 @@ import json
 import re
 import uuid
 import sqlite3
+import io
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
@@ -15,6 +16,11 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from openai import OpenAI
 from prompt_testing import log_prompt_test
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from fastapi.responses import FileResponse
 
 # -------------------------
 # Setup & config
@@ -212,7 +218,7 @@ Return JSON with this exact structure:
     "gtm_channels": [Based on this specific product idea, list 3 concrete marketing channels with platform names. Be specific - instead of "social media" say "TikTok videos" or "LinkedIn posts". Instead of "partnerships" say "partnership with [specific type of company]". For a meme app: "TikTok creator partnerships", "Reddit r/memes community", "Discord meme servers". For B2B: "LinkedIn cold outreach", "Product Hunt launch", "Y Combinator Slack". Be this specific.],
     "tamsam_som": "Based on this specific product idea, take a realistic market size assessment with context, and briefly explain how to aquire a products SOM. Please explain in terms that a high school graduate would understand],
     "launch_30_day_plan": [Based on this specific product idea, Create 6 actionable steps specific to THIS product type, not a generic startup checklist],
-    "next_steps": [Based on this specific product idea, list 6 steps for users to get the product from idea to launch. An example of an immediate first step would be "Render Working Code" and the link should be to Replit]
+    "next_steps": [Based on this specific product idea, list 6 steps with more concrete details for users to get the product from idea to launch. An example of an immediate first step would be "Render Working Code" and the link should be to a site where the user can render starter code. For an AI-powered, legal marketing tool, steps should include specific details to product like: specific legal conferences to target and exact LinkedIn ad strategies]
 }}
 
 Requirements:
@@ -447,16 +453,6 @@ async def view_record(request: Request, rec_id: str):
         },
     )
 
-@app.get("/download/{rec_id}.json")
-async def download_json(rec_id: str):
-    with db_conn() as con:
-        row = con.execute(
-            "SELECT analysis_json FROM analyses WHERE id = ?", (rec_id,)
-        ).fetchone()
-    if not row:
-        raise HTTPException(status_code=404, detail="Not found")
-    data = json.loads(row[0])
-    return JSONResponse(content=data)
 
 @app.get("/health")
 async def health_check():
@@ -494,6 +490,109 @@ def log_analysis():
         }
     except:
         return {"error": "Could not analyze logs"}
+
+
+@app.get("/download/{record_id}")
+async def download_pdf(record_id: str):
+    # Get analysis data from database
+    with db_conn() as con:
+        row = con.execute(
+            "SELECT * FROM analyses WHERE id = ?", (record_id,)
+        ).fetchone()
+        
+        if not row:
+            raise HTTPException(404, "Analysis not found")
+        
+        analysis_dict = json.loads(row[2])  # Assuming analysis data is in column 2
+        idea = row[1]  # Assuming idea is in column 1
+    
+    # Create PDF
+    filename = f"eye-o-analysis-{record_id}.pdf"
+    doc = SimpleDocTemplate(filename, pagesize=letter)
+    styles = getSampleStyleSheet()
+    story = []
+    
+    # Title
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=18,
+        spaceAfter=30,
+    )
+    story.append(Paragraph("Eye-O Analysis Report", title_style))
+    story.append(Spacer(1, 12))
+    
+    # Idea
+    story.append(Paragraph(f"<b>Idea:</b> {idea}", styles['Normal']))
+    story.append(Spacer(1, 12))
+    
+    # Score
+    score = analysis_dict.get("viability_score", "N/A")
+    story.append(Paragraph(f"<b>Viability Score:</b> {score}/10", styles['Normal']))
+    story.append(Spacer(1, 12))
+    
+    # Product Name
+    product_name = analysis_dict.get("product", {}).get("selected_name", "N/A")
+    story.append(Paragraph(f"<b>Product Name:</b> {product_name}", styles['Normal']))
+    story.append(Spacer(1, 12))
+    
+    # Add more sections as needed
+    sections = [
+        ("Positioning", analysis_dict.get("product", {}).get("positioning", "")),
+        ("Target Users", analysis_dict.get("target", {}).get("users", "")),
+        ("Revenue Model", analysis_dict.get("revenue_model", "")),
+    ]
+    
+    for title, content in sections:
+        if content:
+            story.append(Paragraph(f"<b>{title}:</b>", styles['Heading2']))
+            story.append(Paragraph(content, styles['Normal']))
+            story.append(Spacer(1, 12))
+    
+    # Build PDF
+    doc.build(story)
+    
+    return FileResponse(
+        filename, 
+        media_type='application/pdf',
+        filename=f"eye-o-analysis-{record_id}.pdf"
+    )
+    
+@app.get("/view/{rec_id}")
+async def view_record(rec_id: str, request: Request):
+    with db_conn() as con:
+        row = con.execute(
+            "SELECT * FROM analyses WHERE id = ?", (rec_id,)
+        ).fetchone()
+        
+        if not row:
+            raise HTTPException(404, "Analysis not found")
+        
+        # Convert the JSON string back to dict, then to object
+        analysis_dict = json.loads(row[2])  # Assuming analysis data is in column 2
+        
+        # Convert dict to object with dot notation
+        class DictAsAttr:
+            def __init__(self, d):
+                for k, v in d.items():
+                    if isinstance(v, dict):
+                        setattr(self, k, DictAsAttr(v))
+                    else:
+                        setattr(self, k, v)
+        
+        analysis = DictAsAttr(analysis_dict)
+        
+        return templates.TemplateResponse("results.html", {
+            "request": request,
+            "analysis": analysis,
+            "record_id": rec_id,
+            # ... other context
+        })
+
+@app.get("/share/{record_id}")
+async def get_share_link(record_id: str, request: Request):
+    return {"share_url": f"{request.base_url}view/{record_id}"}
+
 
 # -------------------------
 # Local dev entrypoint
