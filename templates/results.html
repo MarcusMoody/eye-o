@@ -193,7 +193,7 @@
     </div>
   </div>
 
-  <script id="analysis-data" type="application/json">
+<script id="analysis-data" type="application/json">
 {{ analysis_json | tojson | safe }}
 </script>
 
@@ -205,10 +205,24 @@
 
   const dataNode = document.getElementById('analysis-data');
   let analysisObj = {};
-  try { analysisObj = dataNode ? JSON.parse(dataNode.textContent) : {}; } catch (_) {}
+  try { 
+    let data = dataNode ? dataNode.textContent : '{}';
+
+    let parsed = JSON.parse(data);
+  
+  // If it's still a string, parse again
+    if (typeof parsed === 'string') {
+      parsed = JSON.parse(parsed);
+    }
+  
+    analysisObj = parsed;
+  } catch (e) {
+    console.log("Parse error:", e);
+  }
 
   const analysisText = JSON.stringify(analysisObj, null, 2);
   const recordId = "{{ record_id or '' }}";
+  const ideaText = "{{ idea or 'N/A' }}";
 
   // Button functionality
   const downloadBtn = document.getElementById('downloadBtn');
@@ -224,25 +238,43 @@
 
   if (copyBtn) {
   copyBtn.addEventListener('click', async () => {
+
+    console.log("analysisObj in copy function:", analysisObj);
+    
+    console.log("Full analysisObj:", JSON.stringify(analysisObj, null, 2));
+    console.log("copyBtn element:", document.getElementById('copyBtn'));
+    console.log("analysisObj structure:", analysisObj);
     // Format the analysis data nicely
     const formatted = `EYE-O ANALYSIS REPORT
     
-  Idea: ${analysisObj.idea || 'N/A'}
-  Score: ${analysisObj.viability_score || 'N/A'}/10
-  Product Name: ${analysisObj.product?.selected_name || 'N/A'}
-  Tagline: ${analysisObj.product?.tagline || 'N/A'}
+Idea: ${ideaText}
+Score: ${analysisObj.viability_score || 'N/A'}/10
+Product Name: ${analysisObj.product?.selected_name || 'N/A'}
+Tagline: ${analysisObj.product?.tagline || 'N/A'}
 
-  POSITIONING:
-  ${analysisObj.product?.positioning || 'N/A'}
+POSITIONING:
+${analysisObj.product?.positioning || 'N/A'}
 
-  TARGET USERS:
-  ${analysisObj.target?.users || 'N/A'}
+TARGET USERS:
+${analysisObj.target?.users || 'N/A'}
 
-  REVENUE MODEL:
-  ${analysisObj.revenue_model || 'N/A'}
+REVENUE MODEL:
+${analysisObj.revenue_model || 'N/A'}
 
-  NEXT STEPS:
-  ${(analysisObj.next_steps || []).map((step, i) => `${i+1}. ${step}`).join('\n')}`;
+KEY RISKS:
+${(analysisObj.key_risks || []).map((risk, i) => `${i+1}. ${risk}`).join('\n')}
+
+COUNTER MOVES:
+${(analysisObj.counter_moves || []).map((move, i) => `${i+1}. ${move}`).join('\n')}
+
+OPPORTUNITIES:
+${(analysisObj.opportunities || []).map((opp, i) => `${i+1}. ${opp}`).join('\n')}
+
+LAUNCH PLAN:
+${(analysisObj.launch_30_day_plan || []).map((step, i) => `${i+1}. ${step}`).join('\n')}
+
+NEXT STEPS:
+${(analysisObj.next_steps || []).map((step, i) => `${i+1}. ${step}`).join('\n')}`;
 
     try {
       await navigator.clipboard.writeText(formatted);

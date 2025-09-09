@@ -249,6 +249,7 @@ def analyze_idea_with_openai(idea: str) -> Dict[str, Any]:
         content = resp.choices[0].message.content.strip()
         json_str = balanced_json_or_all(content)
         data = json.loads(json_str)
+        data["idea"] = idea
         
         # Add mood images based on keywords
         mood_keywords = data.get("mood_keywords", [])
@@ -539,15 +540,28 @@ async def download_pdf(record_id: str):
     # Add more sections as needed
     sections = [
         ("Positioning", analysis_dict.get("product", {}).get("positioning", "")),
+        ("Tagline", analysis_dict.get("product", {}).get("tagline", "")),
         ("Target Users", analysis_dict.get("target", {}).get("users", "")),
         ("Revenue Model", analysis_dict.get("revenue_model", "")),
+        ("Key Risks", analysis_dict.get("key_risks", [])),
+        ("Counter Moves", analysis_dict.get("counter_moves", [])),
+        ("Opportunities", analysis_dict.get("opportunities", [])),
+        ("Launch Plan", analysis_dict.get("launch_30_day_plan", [])),
+        ("Next Steps", analysis_dict.get("next_steps", [])),
     ]
     
     for title, content in sections:
         if content:
             story.append(Paragraph(f"<b>{title}:</b>", styles['Heading2']))
-            story.append(Paragraph(content, styles['Normal']))
-            story.append(Spacer(1, 12))
+        
+        # Handle lists vs strings
+        if isinstance(content, list):
+            content_text = "<br/>".join([f"• {item}" for item in content])
+        else:
+            content_text = str(content)
+            
+        story.append(Paragraph(content_text, styles['Normal']))
+        story.append(Spacer(1, 12))
     
     # Build PDF
     doc.build(story)
@@ -569,6 +583,7 @@ async def view_record(rec_id: str, request: Request):
             raise HTTPException(404, "Analysis not found")
         
         # Convert the JSON string back to dict, then to object
+        idea = row[1]
         analysis_dict = json.loads(row[2])  # Assuming analysis data is in column 2
         
         # Convert dict to object with dot notation
@@ -585,13 +600,28 @@ async def view_record(rec_id: str, request: Request):
         return templates.TemplateResponse("results.html", {
             "request": request,
             "analysis": analysis,
+            "idea": idea,
             "record_id": rec_id,
-            # ... other context
+            "analysis_json": analysis_dict,
         })
 
 @app.get("/share/{record_id}")
 async def get_share_link(record_id: str, request: Request):
     return {"share_url": f"{request.base_url}view/{record_id}"}
+
+@app.get("/debug/db")
+def debug_db():
+    with db_conn() as con:
+        cursor = con.execute("PRAGMA table_info(analyses)")
+        columns = cursor.fetchall()
+        
+        # Also get a sample row
+        sample = con.execute("SELECT * FROM analyses LIMIT 1").fetchone()
+        
+        return {
+            "columns": columns,
+            "sample_row": sample
+        }
 
 
 # -------------------------
