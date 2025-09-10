@@ -240,7 +240,11 @@
   copyBtn.addEventListener('click', async () => {
 
     console.log("analysisObj in copy function:", analysisObj);
-    
+    console.log("Copy button clicked");
+    console.log("dataNode:", dataNode);
+    console.log("analysisObj:", analysisObj);
+    console.log("analysisObj type:", typeof analysisObj);
+    console.log("analysisObj keys:", Object.keys(analysisObj));
     console.log("Full analysisObj:", JSON.stringify(analysisObj, null, 2));
     console.log("copyBtn element:", document.getElementById('copyBtn'));
     console.log("analysisObj structure:", analysisObj);
