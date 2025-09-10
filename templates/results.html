@@ -280,13 +280,20 @@ ${(analysisObj.launch_30_day_plan || []).map((step, i) => `${i+1}. ${step}`).joi
 NEXT STEPS:
 ${(analysisObj.next_steps || []).map((step, i) => `${i+1}. ${step}`).join('\n')}`;
 
-    try {
-      await navigator.clipboard.writeText(formatted);
-      copyBtn.innerHTML = '✅';
-      setTimeout(() => copyBtn.innerHTML = '📋', 1500);
-    } catch (e) {
-      alert("Copy failed");
-    }
+  try {
+  // Use the older clipboard method that works with HTTP
+    const textarea = document.createElement('textarea');
+    textarea.value = formatted;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+  
+    copyBtn.innerHTML = '✅';
+    setTimeout(() => copyBtn.innerHTML = '📋', 1500);
+  } catch (e) {
+    alert("Copy failed");
+  }
   });
   }
 
