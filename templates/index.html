@@ -98,8 +98,8 @@
       </div>
       
       <div class="row">
+
         
-        <a href="{{ request.url_for('history') }}" class="history-link">History</a>
       </div>
       
       <button type="submit" class="btn" id="submitBtn">
@@ -134,7 +134,7 @@
       }
       
       analytics.track('analysis_start');
-      
+
       btn.disabled = true;
       btnText.textContent = 'Processing...';
       overlay.style.display = 'flex';
