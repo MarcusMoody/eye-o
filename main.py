@@ -622,7 +622,52 @@ def debug_db():
             "columns": columns,
             "sample_row": sample
         }
+        
+@app.post("/analytics/{event_type}")
+async def track_event(event_type: str, request: Request):
+    event = {
+        "timestamp": datetime.utcnow().isoformat(),
+        "event": event_type,
+        "ip": request.client.host,
+        "user_agent": request.headers.get("user-agent", "")
+    }
+    
+    with open("analytics.jsonl", "a") as f:
+        f.write(json.dumps(event) + "\n")
+    
+    return {"status": "tracked"}
 
+
+
+
+@app.get("/admin/history")
+async def admin_history(request: Request, admin_key: str = None):
+    SECRET_ADMIN_KEY = "mct_eyeo_admin_2025_8184"
+    
+    if admin_key != SECRET_ADMIN_KEY:
+        raise HTTPException(status_code=404, detail="Not found")
+    
+    with db_conn() as con:
+        rows = con.execute(
+            "SELECT id, idea, score, created_at, analysis_json FROM analyses ORDER BY datetime(created_at) DESC LIMIT 50"
+        ).fetchall()
+    
+    records = [{"id": r[0], "idea": r[1], "score": r[2], "created_at": r[3], "analysis_json": r[4]} for r in rows]
+    
+    
+    analytics_data = []
+    try:
+        with open("analytics.jsonl", "r") as f:
+            for line in f:
+                analytics_data.append(json.loads(line))
+    except FileNotFoundError:
+        pass
+    
+    return templates.TemplateResponse("admin_history.html", {
+        "request": request,
+        "records": records,
+        "analytics": analytics_data
+    })
 
 # -------------------------
 # Local dev entrypoint

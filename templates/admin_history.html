@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin History - Eye-O</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .record { background: white; margin: 15px 0; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .score { font-size: 24px; font-weight: bold; color: #667eea; }
+        .idea { font-style: italic; margin: 10px 0; }
+        .timestamp { color: #666; font-size: 0.9em; }
+        .analytics { background: #e8f4f8; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Eye-O Admin Dashboard</h1>
+        
+        <div class="analytics">
+            <h3>Analytics Summary</h3>
+            <p>Total events: {{ analytics|length }}</p>
+            <p>Total analyses: {{ records|length }}</p>
+        </div>
+
+        <h2>Recent Analyses</h2>
+        {% for record in records %}
+        <div class="record">
+            <div class="score">Score: {{ record.viability_score }}/10</div>
+            <div class="idea">"{{ record.idea }}"</div>
+            <div class="timestamp">{{ record.timestamp }} - Product: {{ record.selected_name or 'N/A' }}</div>
+            <a href="/view/{{ record.id }}" target="_blank">View Full Analysis →</a>
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>

@@ -133,6 +133,8 @@
         return;
       }
       
+      analytics.track('analysis_start');
+      
       btn.disabled = true;
       btnText.textContent = 'Processing...';
       overlay.style.display = 'flex';
@@ -158,6 +160,16 @@
     window.addEventListener('load', () => {
       textarea.focus();
     });
+  
+ 
+  let analytics = {
+    track: (event) => fetch(`/analytics/${event}`, {method: 'POST'}).catch(() => {})
+  };
+
+  // Track page view
+  analytics.track('page_view');
+  </script>
+    
   </script>
 </body>
 </html>

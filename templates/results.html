@@ -34,7 +34,17 @@
     .handle-available{color:#27ae60;font-weight:700}
     .handle-taken{color:#e74c3c;font-weight:700}
     .handle-unknown{color:#9b59b6;font-weight:700}
+
+    
   </style>
+<script>
+let analytics = {
+  track: (event) => fetch(`/analytics/${event}`, {method: 'POST'}).catch(() => {})
+};
+
+// Track page view
+analytics.track('page_view');
+</script>
 </head>
 <body>
   <div class="container">
@@ -238,6 +248,7 @@
 
   if (copyBtn) {
   copyBtn.addEventListener('click', async () => {
+    analytics.track('copy_used');
 
     console.log("analysisObj in copy function:", analysisObj);
     console.log("Copy button clicked");
