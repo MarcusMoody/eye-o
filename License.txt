@@ -1,0 +1,15 @@
+### `LICENSE` (custom restrictive license)
+```text
+Copyright (c) 2025 Moody Creative Technologies LLC
+
+All rights reserved.
+
+Permission is hereby granted to view, download, and run this software for personal or educational purposes only.
+
+The following are NOT permitted without prior written consent from Moody Creative Technologies LLC:
+- Commercial use of this software or derivative works
+- Modification, redistribution, or sublicensing of the source code
+- Hosting the software as a public or private service
+
+This software is provided "as is", without warranty of any kind. 
+For commercial licensing inquiries, contact: marcus@moodycreativetechnologies.com
