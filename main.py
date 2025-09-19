@@ -1,11 +1,14 @@
 import os
 import json
+import html
 import re
 import uuid
 import sqlite3
 import io
 from datetime import datetime
 from typing import Any, Dict, List, Optional
+from collections import defaultdict  
+from time import time
 
 import requests
 import dns.resolver
@@ -43,7 +46,18 @@ client: Optional[OpenAI] = None
 if OPENAI_API_KEY:
     client = OpenAI(api_key=OPENAI_API_KEY)
 
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://eyeo.app"],
+    allow_credentials=True,
+    allow_methods=["GET", "POST"],
+    allow_headers=["*"],
+)
+
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -94,6 +108,20 @@ def balanced_json_or_all(text: str) -> str:
     
     return text
 
+rate_limit_store = defaultdict(list)
+
+def check_rate_limit(ip: str, limit: int = 5, window: int = 300) -> bool:
+    now = time()
+    requests = rate_limit_store[ip]
+    # Remove old requests
+    rate_limit_store[ip] = [req_time for req_time in requests if now - req_time < window]
+    
+    if len(rate_limit_store[ip]) >= limit:
+        return False
+    
+    rate_limit_store[ip].append(now)
+    return True
+
 def ensure_list(val: Any) -> List[Any]:
     if isinstance(val, list):
         return val
@@ -108,6 +136,19 @@ def get_score_label(score: int) -> str:
     elif score >= 5: return "Good foundation" 
     elif score >= 3: return "Needs work"
     else: return "High risk"
+
+def get_relative_time(timestamp_str):
+    from datetime import timezone
+    created = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+    now = datetime.now(timezone.utc)
+    diff = now - created
+    
+    if diff.days > 0:
+        return f"{diff.days} days ago"
+    elif diff.seconds > 3600:
+        return f"{diff.seconds // 3600} hours ago"
+    else:
+        return f"{diff.seconds // 60} minutes ago"
 
 def normalize_analysis(data: Dict[str, Any]) -> Dict[str, Any]:
     """Restructured for new Product/Target sections"""
@@ -150,22 +191,48 @@ def normalize_analysis(data: Dict[str, Any]) -> Dict[str, Any]:
         "next_steps": ensure_list(data.get("next_steps") or ["Market research", "MVP build", "User testing", "Beta launch", "Scale"]),
         "mood_images": data.get("mood_images", [])
     }
+    
+def sanitize_input(text: str) -> str:
+    """Basic input sanitization"""
+    # Remove any HTML tags
+    text = re.sub(r'<[^>]+>', '', text)
+    # Escape HTML entities
+    text = html.escape(text)
+    # Remove excessive whitespace
+    text = re.sub(r'\s+', ' ', text).strip()
+    # Limit length
+    return text[:2000]
 
 
 # -------------------------
 # API integrations
 # -------------------------
-def get_mood_images(keywords: List[str]) -> List[str]:
-    """Based on this specific product idea, Get mood board images from Unsplash"""
+def get_mood_images(idea_text: str, positioning: str, target_users: str) -> List[str]:
+    """Get contextually relevant mood board images"""
     if not UNSPLASH_ACCESS_KEY or not ENABLE_EXTERNAL_CHECKS:
         return []
     
+    # Extract industry/context keywords from the idea and positioning
+    search_terms = []
+    
+    # Add industry-specific terms
+    if any(word in idea_text.lower() for word in ['supply chain', 'logistics']):
+        search_terms.extend(['warehouse logistics', 'supply chain dashboard', 'cargo shipping'])
+    elif any(word in idea_text.lower() for word in ['health', 'medical', 'patient']):
+        search_terms.extend(['medical technology', 'healthcare dashboard', 'hospital'])
+    elif any(word in idea_text.lower() for word in ['expense', 'finance', 'accounting']):
+        search_terms.extend(['finance team', 'expense receipt', 'accounting dashboard'])
+    else:
+        # Extract key nouns from positioning
+        key_words = positioning.split()[:3]  # First 3 words often contain industry context
+        search_terms = [' '.join(key_words[:2])]
+    
     images = []
-    for keyword in keywords[:3]:  # Limit to 3 keywords
+    for term in search_terms[:2]:  # Limit to 2 searches
         try:
             response = requests.get(
                 f"https://api.unsplash.com/search/photos",
-                params={"query": keyword, "per_page": 1, "orientation": "landscape"},
+                params={"query": term, "per_page": 1, "orientation": "landscape"},
                 headers={"Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"},
                 timeout=10
             )
@@ -174,7 +241,7 @@ def get_mood_images(keywords: List[str]) -> List[str]:
                 if data.get("results"):
                     images.append(data["results"][0]["urls"]["small"])
         except Exception as e:
-            print(f"Unsplash error for {keyword}: {e}")
+            print(f"Unsplash error for {term}: {e}")
     
     return images
 
@@ -200,26 +267,54 @@ Product Idea: "{idea}"
 
 Return JSON with this exact structure:
 {{
-    "viability_score": [Based on this specific product idea, give a comprehensive 1-10 score of the business idea taking into accountability originality, it solving a real-world problem, growth potential, and all criteria of a potentially successful business idea],
+    "viability_score": [Rate this business idea considering: 1) Market demand strength, 2) Competitive advantages, 3) Execution feasibility, 4) Revenue potential, 5) Risk factors. Ideas scoring high on 1-4 with manageable risks should score 9-10. Use 8/10 only when significant concerns outweigh advantages. Reserve scores below 7 for ideas with fundamental flaws.],
     "score_explanation": "[Based on the specific product idea, give a brief explanation of the score]",
-    "positioning": "[Based on this specific product idea, give a clear business market positioning statement]",
-    "target_users": "[Based on this specific product idea, give specific, short yet highly descriptive user demographics and characteristics]",
-    "product_names": [Give 3 original, memorable, innovative, relative and immediately usable product names that relate to the specific product and business. For a meme app: "MeMe (pronounced Mimi)", For a memory palace generator AI app: "Memory's Past". Be as creative as possible.],
+    Example: "The product addresses a real-world problem with a growing market in mental health, offering originality and potential for personalized care."
+    
+    "positioning": "[Clear business market positioning statement that directly addresses the core problem for your specific target users]",
+    Example: "An AI-driven emotional intelligence tool enhancing mental health therapy through personalized, real-time support."
+    
+    "target_users": "[Specific, descriptive demographics with behavioral characteristics]",
+    Example: "Adults aged 18-45 seeking mental health support, tech-savvy, frequent therapy attendees, open to AI-assisted solutions."
+    
+    "product_names": [3 creative, brandable names specific to the product - avoid generic terms like "Pro", "Solution"],
+    Example: ["EmotiSync", "MindMeld AI", "Therapease"]
+    
     "tagline": "[catchy, original, and memorable tagline under 8 words]",
+    Example: "Feel Understood, Always."
     "brand_personality": "[based on this specific product idea, give a viable brand character and tone description]",
-    "mood_keywords": [Give 5 words that describe the specific aesthetic, vibe, feeling, style, and energy of the specific product],
-    "color_palette": [Give 3 beautiful, stylistically and aesthetically pleasing colors and their hexcodes],
+    
+    "mood_keywords": [5 words describing the specific aesthetic that matches the industry and users],
+    Example for healthcare: ["compassionate", "clinical", "trustworthy", "calming", "professional"]
+    Example for logistics: ["efficient", "robust", "global", "systematic", "reliable"]
+
+    "color_palette": [Give 3 beautiful, stylistically and aesthetically pleasing colors and their hexcodes relating to the brand personality],
+    
     "core_pain_points": ["[specific_pain1]", "[specific_pain2]", "[specific_pain3]"],
-    "key_risks": [Give top 3 riskiest assumptions about the specific product],
-    "counter_moves": [Give 3 strategic, tactical, and defensive counters to the products top 3 riskiest assumptions],
+    "key_risks": "[Given your positioning above, what are the 3 biggest threats to success?]",
+    Example: ["user privacy concerns", "AI accuracy and empathy", "technology adoption resistance"]
+    
+    "counter_moves": "[Specific actions to address each risk mentioned above]",
+    Example: ["implement robust data privacy measures", "utilize advanced NLP and sentiment analysis", "offer free trials and educational content"]
+    
     "opportunities": [Based on this specific product idea, list 3 opportunities in the realm of marketing, growth, and competition failures],
+    
     "similar_products": [Research and name 3 REAL competing products/companies that actually exist, not placeholders],
-    "revenue_model": "[Based on this specific product, give a tailored, logical, and specific revenue approach. Nothing simple and basic like "freemium mode, premium features". Be specific to the product and think of revenue for the product in ways that may not have been pursued before, but will increase revenue],
-    "gtm_channels": [Based on this specific product idea, list 3 concrete marketing channels with platform names. Be specific - instead of "social media" say "TikTok videos" or "LinkedIn posts". Instead of "partnerships" say "partnership with [specific type of company]". For a meme app: "TikTok creator partnerships", "Reddit r/memes community", "Discord meme servers". For B2B: "LinkedIn cold outreach", "Product Hunt launch", "Y Combinator Slack". Be this specific.],
+    
+    "revenue_model": "[Tailored, specific revenue approach beyond basic freemium that aligns with your target users and addresses the identified risks- think creatively about monetization]",
+    Example: "Subscription-based model with tiered pricing for different levels of personalization, plus partnerships with therapy clinics offering bundled services."
+    
+    "gtm_channels": [3 specific platforms/methods, not general categories],
+    Example: ["Instagram mental health influencer collaborations", "LinkedIn posts targeting mental health professionals", "Partnerships with online therapy platforms"]
+    
     "tamsam_som": "Based on this specific product idea, take a realistic market size assessment with context, and briefly explain how to aquire a products SOM. Please explain in terms that a high school graduate would understand],
-    "launch_30_day_plan": [Based on this specific product idea, Create 6 actionable steps specific to THIS product type, not a generic startup checklist],
+    
+    "launch_30_day_plan": [Based on this specific product idea, Create 6 actionable steps specific to THIS product brand positioning, not a generic startup checklist, that prioritize the highest-risk assumptions from above],
+    
     "next_steps": [Based on this specific product idea, list 6 steps with more concrete details for users to get the product from idea to launch. An example of an immediate first step would be "Render Working Code" and the link should be to a site where the user can render starter code. For an AI-powered, legal marketing tool, steps should include specific details to product like: specific legal conferences to target and exact LinkedIn ad strategies]
 }}
+
+CRITICAL: Each section should reference and build upon previous sections. Connect the dots between sectoions in a way that makes every section flow together.Connect positioning to risks, risks to counter-moves, target users to GTM channels, etc. Create narrative coherence rather than isolated modules.
 
 Requirements:
 - Product names must be creative, brandable, NOT generic (avoid "Pro", "Solution", "Platform"), innovative
@@ -252,8 +347,8 @@ def analyze_idea_with_openai(idea: str) -> Dict[str, Any]:
         data["idea"] = idea
         
         # Add mood images based on keywords
-        mood_keywords = data.get("mood_keywords", [])
-        data["mood_images"] = get_mood_images(mood_keywords)
+        
+        data["mood_images"] = get_mood_images(idea, data.get("positioning", ""), data.get("target_users", ""))
         
         # After generating analysis
         log_prompt_test("v1.0", idea, data)
@@ -283,8 +378,8 @@ def analyze_idea_with_local(idea: str) -> Dict[str, Any]:
             data = json.loads(json_str)
             
         # Add mood images for local model too
-        mood_keywords = data.get("mood_keywords", [])
-        data["mood_images"] = get_mood_images(mood_keywords)
+        
+        data["mood_images"] = get_mood_images(idea, data.get("positioning", ""), data.get("target_users", ""))
         
         return normalize_analysis(data)
     except Exception as e:
@@ -372,11 +467,37 @@ async def analyze(
     idea: str = Form(...),
     use_local: str = Form(None),
 ):
+    
+    idea = sanitize_input(idea)
+    
+    if not check_rate_limit(request.client.host):
+        raise HTTPException(status_code=429, detail="Too many requests. Please wait before trying again.")
+    
     if not idea.strip():
         return templates.TemplateResponse(
             "index.html",
             {"request": request, "error": "Please enter a product idea to analyze."},
         )
+    
+    if not idea.strip():
+        return templates.TemplateResponse(
+            "index.html",
+            {"request": request, "error": "Please enter a product idea to analyze."},
+        )
+     
+    if len(idea.strip()) < 10:
+        return templates.TemplateResponse("index.html", {
+            "request": request, 
+            "error": "Please provide at least 10 characters describing your idea."
+        })
+    
+    if len(idea.strip()) > 2000:
+        return templates.TemplateResponse("index.html", {
+            "request": request, 
+            "error": "Please keep your idea under 2000 characters."
+        })   
+    
+    
     try:
         if use_local == "1":
             analysis = analyze_idea_with_local(idea)
@@ -409,6 +530,13 @@ async def analyze(
                 "record_id": rec_id,
             },
         )
+        
+    except requests.Timeout:
+        return templates.TemplateResponse("index.html", {
+            "request": request, 
+            "error": "Analysis timed out. Please try again with a shorter description."
+        })    
+    
     except Exception as e:
         print(f"Error in /analyze: {e}")
         return templates.TemplateResponse(
@@ -435,6 +563,9 @@ async def view_record(request: Request, rec_id: str):
         raise HTTPException(status_code=404, detail="Record not found")
     idea = row[0]
     analysis = json.loads(row[1])
+    created_at = row[2]
+    
+    relative_time = get_relative_time(created_at)
     
     # Re-check domains/handles for this record
     selected_name = analysis.get("product", {}).get("selected_name", "")
@@ -572,39 +703,6 @@ async def download_pdf(record_id: str):
         filename=f"eye-o-analysis-{record_id}.pdf"
     )
     
-@app.get("/view/{rec_id}")
-async def view_record(rec_id: str, request: Request):
-    with db_conn() as con:
-        row = con.execute(
-            "SELECT * FROM analyses WHERE id = ?", (rec_id,)
-        ).fetchone()
-        
-        if not row:
-            raise HTTPException(404, "Analysis not found")
-        
-        # Convert the JSON string back to dict, then to object
-        idea = row[1]
-        analysis_dict = json.loads(row[2])  # Assuming analysis data is in column 2
-        
-        # Convert dict to object with dot notation
-        class DictAsAttr:
-            def __init__(self, d):
-                for k, v in d.items():
-                    if isinstance(v, dict):
-                        setattr(self, k, DictAsAttr(v))
-                    else:
-                        setattr(self, k, v)
-        
-        analysis = DictAsAttr(analysis_dict)
-        
-        return templates.TemplateResponse("results.html", {
-            "request": request,
-            "analysis": analysis,
-            "idea": idea,
-            "record_id": rec_id,
-            "analysis_json": analysis_dict,
-        })
-
 @app.get("/share/{record_id}")
 async def get_share_link(record_id: str, request: Request):
     return {"share_url": f"{request.base_url}view/{record_id}"}

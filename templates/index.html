@@ -3,10 +3,30 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Eye-O - AI Product Intelligence</title>
+  <title>Eye-O | AI Business Idea Validator - Analyze Your Startup in 60 Seconds</title>
+  <meta name="description" content="Get instant AI-powered analysis of your business ideas. Validate market potential, identify risks, and get actionable launch plans.">
+  <meta property="og:title" content="Eye-O - AI Business Idea Oracle">
+  <meta property="og:description" content="Transform your product ideas into strategic insights with AI-powered analysis">
 
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
   
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Eye-O",
+    "description": "AI-powered business idea validator and strategic analysis tool",
+    "url": "https://eyeo.app",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web Browser",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    }
+  }
+  </script>
+
 
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -70,6 +90,23 @@
     }
     .loading-orb { font-size: 60px; animation: float 2s infinite ease-in-out; margin-bottom: 15px; }
     .loading-text { color: #667eea; font-weight: 600; animation: fade 1.5s infinite ease-in-out; }
+
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+  }
+
+    .how-it-works { margin: 30px 0; text-align: center;}
+    .how-it-works h3 { color: #2c3e50; margin-bottom: 20px;}
+    .steps { display: flex; gap: 20px; justify-content: space-between;}
+    .step { flex: 1; text-align: center;}
+    .step-number { display: inline-block; width: 30px; height: 30px; background: #667eea; color: white; border-radius: 50%; line-height: 30px; margin-bottom: 10px;}
+    
+    @media (max-width: 600px) {
+    .steps { flex-direction: column; }
+    }
+
+    
+
     @keyframes float { 
       0%, 100% { transform: translateY(0px) rotate(0deg); } 
       50% { transform: translateY(-10px) rotate(180deg); } 
@@ -78,6 +115,9 @@
       0%, 100% { opacity: 0.5; } 
       50% { opacity: 1; } 
     }
+
+    
+
   </style>
 </head>
 <body>
@@ -98,10 +138,13 @@
           id="idea" 
           placeholder="An app that connects dog owners for playdates based on their pets' personalities and energy levels..."
           required
+          aria-label="Describe your product idea"
+          aria-describedby="idea-help"
         ></textarea>
       </div>
-      
+      <div id="idea-help" class="sr-only">Enter your business idea with as much detail as you'd like</div>
       <div class="row">
+      
 
 
       </div>
@@ -110,6 +153,24 @@
         <span id="btnText">Analyze My Idea</span>
       </button>
     </form>
+
+  <div class="how-it-works">
+    <h3>How it works</h3>
+    <div class="steps">
+      <div class="step">
+        <span class="step-number">1</span>
+        <p>Describe your product idea in the text box above</p>
+      </div>
+      <div class="step">
+        <span class="step-number">2</span>
+        <p>Our AI analyzes market potential, risks, and opportunities</p>
+      </div>
+      <div class="step">
+        <span class="step-number">3</span>
+        <p>Get a comprehensive report with actionable insights</p>
+      </div>
+    </div>
+  </div>
     
     <div class="example">
       <div class="example-title">💡 Pro Tip:</div>
@@ -142,6 +203,32 @@
       btn.disabled = true;
       btnText.textContent = 'Processing...';
       overlay.style.display = 'flex';
+
+      const progressSteps = [
+        "Analyzing market potential...",
+        "Identifying target users...", 
+        "Evaluating risks...",
+        "Generating brand options...",
+        "Finalizing recommendations..."
+      ];
+  
+      let currentStep = 0;
+      const progressInterval = setInterval(() => {
+        if (currentStep < progressSteps.length) {
+          document.querySelector('.loading-text').textContent = progressSteps[currentStep];
+          currentStep++;
+        }
+      }, 3000);
+
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && e.ctrlKey) {
+            document.getElementById('ideaForm').submit();
+        }
+        if (e.key === 'Escape') {
+            document.getElementById('idea').value = '';
+        }
+      });
+
       
       // Add timeout fallback in case something goes wrong
       setTimeout(() => {
@@ -172,6 +259,31 @@
 
   // Track page view
   analytics.track('page_view');
+
+// Save placeholder on focus
+textarea.addEventListener('focus', function() {
+  if (this.placeholder) {
+    this.setAttribute('data-original-placeholder', this.placeholder);
+    this.placeholder = '';
+  }
+});
+
+// Restore placeholder on blur if empty
+textarea.addEventListener('blur', function() {
+  if (!this.value.trim() && this.getAttribute('data-original-placeholder')) {
+    this.placeholder = this.getAttribute('data-original-placeholder');
+  }
+});
+
+if (sessionStorage.getItem('lastAnalysisId')) {
+        const backButton = document.createElement('a');
+        backButton.href = `/view/${sessionStorage.getItem('lastAnalysisId')}`;
+        backButton.className = 'btn';
+        backButton.textContent = '← Back to Last Analysis';
+        backButton.style.marginBottom = '20px';
+        document.querySelector('.container').insertBefore(backButton, document.querySelector('form'));
+}
+
   </script>
     
   </script>

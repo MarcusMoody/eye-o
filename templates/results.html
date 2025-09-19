@@ -6,7 +6,7 @@
   <title>Analysis Results - Eye-O</title>
 
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
-  <
+  
 
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
@@ -38,13 +38,17 @@
     .handle-available{color:#27ae60;font-weight:700}
     .handle-taken{color:#e74c3c;font-weight:700}
     .handle-unknown{color:#9b59b6;font-weight:700}
-
+    .timestamp {color: #7f8c8d;font-size: 0.9rem;margin-top: 8px;font-style: italic;
+    
+}
     
   </style>
 <script>
 let analytics = {
   track: (event) => fetch(`/analytics/${event}`, {method: 'POST'}).catch(() => {})
 };
+
+sessionStorage.setItem('lastAnalysisId', '{{ record_id }}');
 
 // Track page view
 analytics.track('page_view');
@@ -60,6 +64,7 @@ analytics.track('page_view');
       </div>
       <div class="score-label">{{ analysis.score_label }}</div>
       <p class="muted">{{ analysis.score_explanation }}</p>
+      <p class="timestamp">Generated {{ relative_time }}</p>
     </div>
 
     <div class="grid">
