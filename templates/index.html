@@ -281,7 +281,7 @@ if (sessionStorage.getItem('lastAnalysisId')) {
         backButton.className = 'btn';
         backButton.textContent = '← Back to Last Analysis';
         backButton.style.marginBottom = '20px';
-        document.querySelector('.container').insertBefore(backButton, document.querySelector('form'));
+        document.querySelector('.subtitle').insertAdjacentElement('afterend', backButton);
 }
 
   </script>

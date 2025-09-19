@@ -215,9 +215,14 @@ def get_mood_images(idea_text: str, positioning: str, target_users: str) -> List
     # Extract industry/context keywords from the idea and positioning
     search_terms = []
     
+    
+    
+    
     # Add industry-specific terms
     if any(word in idea_text.lower() for word in ['supply chain', 'logistics']):
         search_terms.extend(['warehouse logistics', 'supply chain dashboard', 'cargo shipping'])
+    elif any(word in idea_text.lower() for word in ['privacy', 'compliance', 'gdpr', 'data protection']):
+        search_terms.extend(['cybersecurity dashboard', 'data privacy office', 'compliance meeting'])   
     elif any(word in idea_text.lower() for word in ['health', 'medical', 'patient']):
         search_terms.extend(['medical technology', 'healthcare dashboard', 'hospital'])
     elif any(word in idea_text.lower() for word in ['expense', 'finance', 'accounting']):
@@ -226,9 +231,11 @@ def get_mood_images(idea_text: str, positioning: str, target_users: str) -> List
         # Extract key nouns from positioning
         key_words = positioning.split()[:3]  # First 3 words often contain industry context
         search_terms = [' '.join(key_words[:2])]
+        
+    print(f"Search terms: {search_terms}")
     
     images = []
-    for term in search_terms[:2]:  # Limit to 2 searches
+    for term in search_terms[:3]:  
         try:
             response = requests.get(
                 f"https://api.unsplash.com/search/photos",
@@ -240,9 +247,11 @@ def get_mood_images(idea_text: str, positioning: str, target_users: str) -> List
                 data = response.json()
                 if data.get("results"):
                     images.append(data["results"][0]["urls"]["small"])
+                    print(f"Found image for {term}")
         except Exception as e:
             print(f"Unsplash error for {term}: {e}")
     
+    print(f"Total images found: {len(images)}")
     return images
 
 def check_uspto_trademark(name: str) -> Dict[str, Any]:
