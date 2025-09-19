@@ -4,3 +4,8 @@ __pycache__/
 venv/
 .DS_Store
 prompt_tests.jsonl
+*.log
+*.pyc
+*.pyo
+.idea/
+.vscode/
