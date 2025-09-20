@@ -566,7 +566,7 @@ async def history(request: Request):
 async def view_record(request: Request, rec_id: str):
     with db_conn() as con:
         row = con.execute(
-            "SELECT idea, analysis_json FROM analyses WHERE id = ?", (rec_id,)
+            "SELECT idea, analysis_json, created_at FROM analyses WHERE id = ?", (rec_id,)
         ).fetchone()
     if not row:
         raise HTTPException(status_code=404, detail="Record not found")
