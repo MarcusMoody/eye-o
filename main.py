@@ -287,7 +287,7 @@ Product Idea: "{idea}"
 
 Return JSON with this exact structure:
 {{
-    "viability_score": [Rate this business idea considering: 1) Market demand strength, 2) Competitive advantages, 3) Execution feasibility, 4) Revenue potential, 5) Risk factors. Ideas scoring high on 1-4 with manageable risks should score 9-10. Use 8/10 only when significant concerns outweigh advantages. Reserve scores below 7 for ideas with fundamental flaws.],
+    "viability_score": [Rate this business idea considering: 1) Market demand strength, 2) Competitive advantages, 3) Execution feasibility, 4) Revenue potential, 5) Risk factors. Ideas scoring high on 1-4 with manageable risks should score 9-10. Use 8/10 only when significant concerns outweigh advantages. Reserve scores below 7 for ideas with fundamental flaws. Rate 1-10 based on: Market demand (0-2), Competitive advantage (0-2), Execution feasibility (0-2), Revenue potential (0-2), Risk management (0-2). Sum the scores. Ideas scoring 9-10 require exceptional performance across ALL criteria with clear path to market dominance. Score 7-8 for solid ideas with good execution potential. Score 4-6 for viable but challenging ideas. Score 1-3 for ideas with fundamental problems. Score 0 for non-viable ideas.],
     "score_explanation": "[Based on the specific product idea, give a brief explanation of the score]",
     Example: "The product addresses a real-world problem with a growing market in mental health, offering originality and potential for personalized care."
     
