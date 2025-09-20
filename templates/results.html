@@ -28,8 +28,8 @@
     .sw{width:40px;height:40px;border-radius:50%;border:3px solid #ddd}
     .domain-check{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}
     .available{color:#27ae60;font-weight:700}.taken{color:#e74c3c;font-weight:700}
-    .toolbar{display:flex;gap:12px;justify-content:center;margin:20px 0;flex-wrap:wrap}
-    .btn{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;border:none;padding:12px 20px;border-radius:25px;text-decoration:none;display:inline-flex;align-items:center;gap:8px;font-weight:600}
+    .toolbar {display: flex;gap: 10px;justify-content: center;margin: 20px 0;flex-wrap: wrap;}
+    .btn {background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);color: #fff;border: none;padding: 12px 16px;border-radius: 25px;text-decoration: none;display: inline-flex;align-items: center;gap: 8px;font-weight: 600;font-size: 0.9rem;}
     .btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,0.2)}
     .icon-btn{padding:10px;border-radius:50%;min-width:44px;justify-content:center}
     .sticky{position:fixed;right:16px;bottom:16px}
@@ -201,14 +201,13 @@ analytics.track('page_view');
         {% endfor %}
       </div>
     </div>
-
     <div class="toolbar">
-      <a href="{{ request.url_for('homepage') }}" class="btn">🔮 Analyze Another Idea</a>
       {% if record_id %}
-        <button class="btn icon-btn" id="downloadBtn" title="Download PDF">⬇</button>
-        <button class="btn icon-btn" id="copyBtn" title="Copy Analysis">📋</button>
-        <button class="btn icon-btn" id="shareBtn" title="Share Link">🔗</button>
+        <button class="btn" id="downloadBtn" title="Download PDF">⬇ Download PDF</button>
+        <button class="btn" id="copyBtn" title="Copy Analysis">📋 Copy</button>
+        <button class="btn" id="shareBtn" title="Share Link">🔗 Share</button>
       {% endif %}
+      <a href="{{ request.url_for('homepage') }}" class="btn">🔮 Analyze Another Idea</a>
     </div>
   </div>
 
