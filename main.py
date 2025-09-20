@@ -139,8 +139,18 @@ def get_score_label(score: int) -> str:
 
 def get_relative_time(timestamp_str):
     from datetime import timezone
-    created = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+    
+    if timestamp_str.endswith('Z'):
+        timestamp_str = timestamp_str[:-1] + '+00:00'
+    elif '+' not in timestamp_str and 'T' in timestamp_str:
+        timestamp_str = timestamp_str + '+00:00'
+    
+    created = datetime.fromisoformat(timestamp_str)
     now = datetime.now(timezone.utc)
+    
+    if created.tzinfo is None:
+        created = created.replace(tzinfo=timezone.utc)
+    
     diff = now - created
     
     if diff.days > 0:
@@ -215,22 +225,23 @@ def get_mood_images(idea_text: str, positioning: str, target_users: str) -> List
     # Extract industry/context keywords from the idea and positioning
     search_terms = []
     
-    
+    full_text = f"{idea_text} {positioning} {target_users}".lower()
     
     
     # Add industry-specific terms
-    if any(word in idea_text.lower() for word in ['supply chain', 'logistics']):
+    if any(word in full_text for word in ['child', 'childcare', 'babysit', 'parent', 'kids', 'nanny']):
+        search_terms.extend(['childcare center', 'family with children', 'playground'])
+    elif any(word in full_text for word in ['supply chain', 'logistics']):
         search_terms.extend(['warehouse logistics', 'supply chain dashboard', 'cargo shipping'])
-    elif any(word in idea_text.lower() for word in ['privacy', 'compliance', 'gdpr', 'data protection']):
+    elif any(word in full_text for word in ['privacy', 'compliance', 'gdpr', 'data protection']):
         search_terms.extend(['cybersecurity dashboard', 'data privacy office', 'compliance meeting'])   
-    elif any(word in idea_text.lower() for word in ['health', 'medical', 'patient']):
+    elif any(word in full_text for word in ['health', 'medical', 'patient']):
         search_terms.extend(['medical technology', 'healthcare dashboard', 'hospital'])
-    elif any(word in idea_text.lower() for word in ['expense', 'finance', 'accounting']):
+    elif any(word in full_text for word in ['expense', 'finance', 'accounting']):
         search_terms.extend(['finance team', 'expense receipt', 'accounting dashboard'])
     else:
-        # Extract key nouns from positioning
-        key_words = positioning.split()[:3]  # First 3 words often contain industry context
-        search_terms = [' '.join(key_words[:2])]
+       
+        search_terms = ['business meeting', 'modern office', 'technology workspace']
         
     print(f"Search terms: {search_terms}")
     
