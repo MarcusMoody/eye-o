@@ -320,9 +320,15 @@ ${(analysisObj.next_steps || []).map((step, i) => `${i+1}. ${step}`).join('\n')}
     shareBtn.addEventListener('click', async () => {
       const url = `${location.origin}/view/${recordId}`;
       try {
-        await navigator.clipboard.writeText(url);
-        shareBtn.innerHTML = '✅';
-        setTimeout(() => shareBtn.innerHTML = '🔗', 1500);
+          const textarea = document.createElement('textarea');
+          textarea.value = url;
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textarea);
+            
+          shareBtn.innerHTML = '🔗 ✅ Copied!';
+          setTimeout(() => shareBtn.innerHTML = '🔗 Share', 1500);
       } catch (e) {
         prompt("Copy this link:", url);
       }

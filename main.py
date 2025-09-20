@@ -591,6 +591,7 @@ async def view_record(request: Request, rec_id: str):
             "domains": domains,
             "handles": handles,
             "record_id": rec_id,
+            "relative_time": relative_time,
         },
     )
 
